@@ -1,11 +1,14 @@
 import { useEffect, useState, useRef } from 'react';
 import { useTranslations } from 'use-intl';
-import { Clock, DatabaseBackup, DollarSign, RefreshCw } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { Banknote, Clock, Coins, DatabaseBackup, DollarSign, RefreshCw } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useSettingList, useSetSetting, SettingKey } from '@/api/setting';
 import { useRebuildModelPrice, useUpdateModelPrice, useLastUpdateTime } from '@/api/model';
+import { useDisplayCurrency, useSettingStore, type DisplayCurrency } from '@/stores/setting';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export function SettingLLMPrice() {
@@ -15,11 +18,15 @@ export function SettingLLMPrice() {
     const updatePrice = useUpdateModelPrice();
     const rebuildPrice = useRebuildModelPrice();
     const { data: lastUpdateTime } = useLastUpdateTime();
+    const queryClient = useQueryClient();
+    const displayCurrency = useDisplayCurrency();
 
     const [updateInterval, setUpdateInterval] = useState('');
+    const [rate, setRate] = useState('');
     const [confirmRebuild, setConfirmRebuild] = useState(false);
     const [rebuildCountdown, setRebuildCountdown] = useState(0);
     const initialUpdateInterval = useRef('');
+    const initialRate = useRef('');
 
     useEffect(() => {
         if (settings) {
@@ -27,6 +34,11 @@ export function SettingLLMPrice() {
             if (interval) {
                 queueMicrotask(() => setUpdateInterval(interval.value));
                 initialUpdateInterval.current = interval.value;
+            }
+            const rateSetting = settings.find(s => s.key === SettingKey.USDCNYRate);
+            if (rateSetting) {
+                queueMicrotask(() => setRate(rateSetting.value));
+                initialRate.current = rateSetting.value;
             }
         }
     }, [settings]);
@@ -43,9 +55,20 @@ export function SettingLLMPrice() {
         setSetting.mutate({ key, value }, {
             onSuccess: () => {
                 toast.success(t('saved'));
-                initialUpdateInterval.current = value;
+                if (key === SettingKey.ModelInfoUpdateInterval) initialUpdateInterval.current = value;
+                if (key === SettingKey.USDCNYRate) initialRate.current = value;
+            },
+            onError: (error) => {
+                toast.error(t('llmPrice.updateFailed'), { description: error.message });
             }
         });
+    };
+
+    // 显示货币是纯前端偏好: 切换后失效全部查询, 让缓存里按美元格式化好的金额按新货币重算。
+    const handleDisplayCurrencyChange = (currency: DisplayCurrency) => {
+        if (currency === useSettingStore.getState().displayCurrency) return;
+        useSettingStore.getState().setDisplayCurrency(currency);
+        void queryClient.invalidateQueries();
     };
 
     const handleManualUpdate = () => {
@@ -103,6 +126,53 @@ export function SettingLLMPrice() {
                     placeholder={t('llmPrice.updateInterval.placeholder')}
                     className="w-48 rounded-xl"
                 />
+            </div>
+
+            {/* 人民币汇率: 仅用于前端显示与输入换算, 存储数据仍为美元 */}
+            <div className="flex items-center justify-between gap-4">
+                <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-3">
+                        <DollarSign className="h-5 w-5 text-muted-foreground" />
+                        <span className="text-sm font-medium">{t('llmPrice.exchangeRate.label')}</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground ml-8">{t('llmPrice.exchangeRate.hint')}</span>
+                </div>
+                <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={rate}
+                    onChange={(e) => setRate(e.target.value)}
+                    onBlur={() => handleSave(SettingKey.USDCNYRate, rate, initialRate.current)}
+                    placeholder="7.2"
+                    className="w-48 rounded-xl"
+                />
+            </div>
+
+            {/* 金额显示货币 */}
+            <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                    <Coins className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-sm font-medium">{t('llmPrice.displayCurrency.label')}</span>
+                </div>
+                <div className="flex gap-2">
+                    {(['USD', 'CNY'] as const).map((currency) => (
+                        <button
+                            key={currency}
+                            type="button"
+                            onClick={() => handleDisplayCurrencyChange(currency)}
+                            className={cn(
+                                'inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border px-3 text-xs font-medium transition-colors',
+                                displayCurrency === currency
+                                    ? 'border-primary/30 bg-primary text-primary-foreground'
+                                    : 'border-border bg-muted/20 text-foreground hover:bg-muted/30'
+                            )}
+                        >
+                            <Banknote className="size-3.5" />
+                            {currency === 'USD' ? t('llmPrice.displayCurrency.usd') : t('llmPrice.displayCurrency.cny')}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {/* 手动更新 */}

@@ -3,9 +3,9 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/bestruirui/octopus/internal/conf"
-	"github.com/bestruirui/octopus/internal/db"
-	"github.com/bestruirui/octopus/internal/model"
+	"github.com/91xusir/octopus/internal/conf"
+	"github.com/91xusir/octopus/internal/db"
+	"github.com/91xusir/octopus/internal/model"
 	"github.com/spf13/cobra"
 )
 

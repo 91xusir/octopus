@@ -1,4 +1,4 @@
-module github.com/bestruirui/octopus
+module github.com/91xusir/octopus
 
 go 1.26.10
 

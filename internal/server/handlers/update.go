@@ -3,11 +3,11 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/bestruirui/octopus/internal/conf"
-	"github.com/bestruirui/octopus/internal/server/middleware"
-	"github.com/bestruirui/octopus/internal/server/resp"
-	"github.com/bestruirui/octopus/internal/server/router"
-	"github.com/bestruirui/octopus/internal/update"
+	"github.com/91xusir/octopus/internal/conf"
+	"github.com/91xusir/octopus/internal/server/middleware"
+	"github.com/91xusir/octopus/internal/server/resp"
+	"github.com/91xusir/octopus/internal/server/router"
+	"github.com/91xusir/octopus/internal/update"
 	"github.com/gin-gonic/gin"
 )
 

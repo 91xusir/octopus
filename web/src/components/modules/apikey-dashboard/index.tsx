@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { useAPIKeyDashboardStats } from '@/api/apikey';
 import { useAuthStore } from '@/api/user';
 import { useSettingStore } from '@/stores/setting';
+import { getUSDCNYRate, useDisplayCurrency } from '@/stores/setting';
 import { AnimatedNumber } from '@/components/common/AnimatedNumber';
 import Logo from '@/components/modules/logo';
 import { CopyIconButton } from '@/components/common/CopyButton';
@@ -37,6 +38,7 @@ export function APIKeyDashboard() {
     const { logout } = useAuthStore();
     const { theme, setTheme } = useTheme();
     const { locale, setLocale } = useSettingStore();
+    const displayCurrency = useDisplayCurrency();
     const [, copyToClipboard] = useCopyToClipboard();
 
     const copyWithToast = useCallback(
@@ -162,10 +164,15 @@ export function APIKeyDashboard() {
                                 {maxCost > 0 && (
                                     <div className="mt-4">
                                         <Progress value={Math.min(100, (usedCost / maxCost) * 100)} className="h-4 *:data-[slot=progress-indicator]:bg-chart-1" />
-                                        <div className="flex justify-between text-sm text-muted-foreground mt-1">
-                                            <span>0</span>
-                                            <span>{maxCost.toFixed(2)} $</span>
-                                        </div>
+                                    <div className="flex justify-between text-sm text-muted-foreground mt-1">
+                                        <span>0</span>
+                                        {/* 配额上限本身是美元, 换算只发生在标签显示, 进度条比例仍按美元计算。 */}
+                                        <span>
+                                            {displayCurrency === 'CNY'
+                                                ? `¥${(maxCost * getUSDCNYRate()).toFixed(2)}`
+                                                : `${maxCost.toFixed(2)} $`}
+                                        </span>
+                                    </div>
                                     </div>
                                 )}
                             </div>

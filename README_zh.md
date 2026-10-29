@@ -10,7 +10,6 @@
 
 </div>
 
-
 ## ✨ 特性
 
 - 🔀 **多渠道聚合** - 支持接入多个 LLM 供应商渠道，统一管理
@@ -25,28 +24,11 @@
 - 📦 **轻量单文件部署** - 单个二进制文件即可运行，无需额外运行时依赖
 - 🗄️ **多数据库支持** - 支持 SQLite、MySQL、PostgreSQL
 
-
 ## 🚀 快速开始
-
-### 🐳 Docker 运行
-
-直接运行
-
-```bash
-docker run -d --name octopus -v /path/to/data:/app/data -p 8080:8080 bestrui/octopus
-```
-
-或者使用 docker compose 运行
-
-```bash
-wget https://raw.githubusercontent.com/bestruirui/octopus/refs/heads/master/docker-compose.yml
-docker compose up -d
-```
-
 
 ### 📦 从 Release 下载
 
-从 [Releases](https://github.com/bestruirui/octopus/releases) 下载对应平台的二进制文件，然后运行：
+从 [Releases](https://github.com/91xusir/octopus/releases) 下载对应平台的二进制文件，然后运行：
 
 ```bash
 ./octopus start
@@ -61,7 +43,7 @@ docker compose up -d
 
 ```bash
 # 克隆项目
-git clone https://github.com/bestruirui/octopus.git
+git clone https://github.com/91xusir/octopus.git
 cd octopus
 # 构建前端
 cd web && pnpm install && pnpm run build
@@ -169,7 +151,6 @@ http://localhost:5173
 | `OCTOPUS_LOG_LEVEL` | `log.level` |
 | `OCTOPUS_GITHUB_PAT` | 用于获取最新版本时的速率限制(可选) |
 
-
 ## 📸 界面预览
 
 ### 🖥️ 桌面端
@@ -221,7 +202,6 @@ http://localhost:5173
 </tr>
 </table>
 </div>
-
 
 ## 📖 功能说明
 
@@ -291,9 +271,6 @@ http://localhost:5173
 
 > ⚠️ **重要提示**：退出程序时，请使用正常的关闭方式（如 `Ctrl+C` 或发送 `SIGTERM` 信号），以确保内存中的统计数据能正确写入数据库。**请勿使用 `kill -9` 等强制终止方式**，否则可能导致统计数据丢失。
 
-
-
-
 ## 🔌 客户端接入
 
 ### OpenAI SDK
@@ -360,7 +337,6 @@ experimental_bearer_token = "sk-octopus-"
   "OPENAI_API_KEY": ""
 }
 ```
-
 
 ---
 

@@ -4,6 +4,6 @@ var (
 	Version   = "dev"
 	Commit    = "unknown"
 	BuildTime = "unknown"
-	Author    = "bestrui"
-	Repo      = "https://github.com/bestruirui/octopus"
+	Author    = "91xusir"
+	Repo      = "https://github.com/91xusir/octopus"
 )

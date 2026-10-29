@@ -7,8 +7,12 @@ import { getModelIcon } from '@/lib/model-icons';
 import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ModelDeleteOverlay, ModelEditOverlay } from './ItemOverlays';
-import { cn } from '@/lib/utils';
+import { cn, formatModelPrice } from '@/lib/utils';
+import { getUSDCNYRate, useDisplayCurrency } from '@/stores/setting';
 import { createPortal } from 'react-dom';
+
+// 价格以人民币输入时与美元互转的精度: 显示取 4 位小数, 存库换算回美元取 6 位, 避免来回切换累积误差。
+const roundTo = (value: number, places: number) => Math.round(value * 10 ** places) / 10 ** places;
 
 interface ModelItemProps {
     model: LLMInfo;
@@ -20,6 +24,8 @@ let cachedEditOverlayHeight = 0;
 
 export const ModelItem = memo(function ModelItem({ model, layout = 'grid' }: ModelItemProps) {
     const t = useTranslations('model');
+    // 卡片单价在渲染期经 formatModelPrice 读 store 换算, 订阅显示货币让切换立即重渲染, 不必等列表重新拉取。
+    useDisplayCurrency();
     const isListLayout = layout === 'list';
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState(false);
@@ -28,6 +34,7 @@ export const ModelItem = memo(function ModelItem({ model, layout = 'grid' }: Mod
     const editLayoutId = `edit-btn-${model.name}-${instanceId}`;
     const deleteLayoutId = `delete-btn-${model.name}-${instanceId}`;
     const cardRef = useRef<HTMLElement | null>(null);
+    const [editCurrency, setEditCurrency] = useState<'USD' | 'CNY'>('USD');
     const [editValues, setEditValues] = useState(() => ({
         input: model.input.toString(),
         output: model.output.toString(),
@@ -39,6 +46,27 @@ export const ModelItem = memo(function ModelItem({ model, layout = 'grid' }: Mod
     const deleteModel = useDeleteModel();
 
     const { Icon, className: iconClassName, color: brandColor } = useMemo(() => getModelIcon(model.name), [model.name]);
+
+    // 卡片单价展示随显示货币换算; 编辑货币切换时把已填数值按汇率重定基, 数值含义保持不变。
+    const toEditValues = useCallback((currency: 'USD' | 'CNY') => ({
+        input: (currency === 'CNY' ? roundTo(model.input * getUSDCNYRate(), 4) : model.input).toString(),
+        output: (currency === 'CNY' ? roundTo(model.output * getUSDCNYRate(), 4) : model.output).toString(),
+        cache_read: (currency === 'CNY' ? roundTo(model.cache_read * getUSDCNYRate(), 4) : model.cache_read).toString(),
+        cache_write: (currency === 'CNY' ? roundTo(model.cache_write * getUSDCNYRate(), 4) : model.cache_write).toString(),
+    }), [model.input, model.output, model.cache_read, model.cache_write]);
+
+    const handleEditCurrencyChange = useCallback((currency: 'USD' | 'CNY') => {
+        if (currency === editCurrency) return;
+        const rate = getUSDCNYRate();
+        const factor = currency === 'CNY' ? rate : 1 / rate;
+        setEditCurrency(currency);
+        setEditValues((values) => ({
+            input: roundTo((parseFloat(values.input) || 0) * factor, 6).toString(),
+            output: roundTo((parseFloat(values.output) || 0) * factor, 6).toString(),
+            cache_read: roundTo((parseFloat(values.cache_read) || 0) * factor, 6).toString(),
+            cache_write: roundTo((parseFloat(values.cache_write) || 0) * factor, 6).toString(),
+        }));
+    }, [editCurrency]);
 
     const updateOverlayRect = useCallback(() => {
         const card = cardRef.current;
@@ -70,12 +98,7 @@ export const ModelItem = memo(function ModelItem({ model, layout = 'grid' }: Mod
 
     const handleEditClick = () => {
         setConfirmDelete(false);
-        setEditValues({
-            input: model.input.toString(),
-            output: model.output.toString(),
-            cache_read: model.cache_read.toString(),
-            cache_write: model.cache_write.toString(),
-        });
+        setEditValues(toEditValues(editCurrency));
         // Ensure first open already has anchor geometry so layout animation can run.
         updateOverlayRect();
         setIsEditOpen(true);
@@ -86,12 +109,17 @@ export const ModelItem = memo(function ModelItem({ model, layout = 'grid' }: Mod
     };
 
     const handleSaveEdit = () => {
+        // 人民币输入按汇率换算回美元存储, 数据库始终只保存美元价格。
+        const toUSD = (value: string) => {
+            const parsed = parseFloat(value) || 0;
+            return editCurrency === 'CNY' ? roundTo(parsed / getUSDCNYRate(), 6) : parsed;
+        };
         updateModel.mutate({
             name: model.name,
-            input: parseFloat(editValues.input) || 0,
-            output: parseFloat(editValues.output) || 0,
-            cache_read: parseFloat(editValues.cache_read) || 0,
-            cache_write: parseFloat(editValues.cache_write) || 0,
+            input: toUSD(editValues.input),
+            output: toUSD(editValues.output),
+            cache_read: toUSD(editValues.cache_read),
+            cache_write: toUSD(editValues.cache_write),
         }, {
             onSuccess: () => {
                 closeEdit();
@@ -169,13 +197,13 @@ export const ModelItem = memo(function ModelItem({ model, layout = 'grid' }: Mod
                         <span className="inline-flex items-center gap-1">
                             <ArrowDownToLine className="size-3.5 shrink-0" style={{ color: brandColor }} />
                             {t('card.inputCache')}
-                            <span className="tabular-nums">{model.input.toFixed(2)}/{model.cache_read.toFixed(2)}$</span>
+                            <span className="tabular-nums">{formatModelPrice(model.input)}/{formatModelPrice(model.cache_read)}</span>
                         </span>
                         <span className="text-muted-foreground/60">|</span>
                         <span className="inline-flex items-center gap-1 overflow-hidden">
                             <ArrowUpFromLine className="size-3.5 shrink-0" style={{ color: brandColor }} />
                             {t('card.outputCache')}
-                            <span className="tabular-nums truncate">{model.output.toFixed(2)}/{model.cache_write.toFixed(2)}$</span>
+                            <span className="tabular-nums truncate">{formatModelPrice(model.output)}/{formatModelPrice(model.cache_write)}</span>
                         </span>
                     </p>
                 ) : (
@@ -183,13 +211,13 @@ export const ModelItem = memo(function ModelItem({ model, layout = 'grid' }: Mod
                         <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
                             <ArrowDownToLine className="size-3.5" style={{ color: brandColor }} />
                             {t('card.inputCache')}
-                            <span className="tabular-nums">{model.input.toFixed(2)}/{model.cache_read.toFixed(2)}$</span>
+                            <span className="tabular-nums">{formatModelPrice(model.input)}/{formatModelPrice(model.cache_read)}</span>
                         </p>
 
                         <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
                             <ArrowUpFromLine className="size-3.5" style={{ color: brandColor }} />
                             {t('card.outputCache')}
-                            <span className="tabular-nums">{model.output.toFixed(2)}/{model.cache_write.toFixed(2)}$</span>
+                            <span className="tabular-nums">{formatModelPrice(model.output)}/{formatModelPrice(model.cache_write)}</span>
                         </p>
                     </>
                 )}
@@ -254,6 +282,8 @@ export const ModelItem = memo(function ModelItem({ model, layout = 'grid' }: Mod
                                     brandColor={brandColor}
                                     editValues={editValues}
                                     isPending={updateModel.isPending}
+                                    currency={editCurrency}
+                                    onCurrencyChange={handleEditCurrencyChange}
                                     onChange={setEditValues}
                                     onCancel={handleCancelEdit}
                                     onSave={handleSaveEdit}

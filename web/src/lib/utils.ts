@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { displayUSD, useSettingStore } from "@/stores/setting";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -21,11 +22,27 @@ export function formatCount(num: number | undefined): { raw: number, formatted: 
     formatted: formatNumber(num, [1000000000, 1000000, 1000, 1], ['', 'B', 'M', 'K', '', '']),
   };
 }
+// formatMoney 按显示货币格式化美元金额: raw 恒为美元原值(排序与配额计算依赖), formatted 为当前货币的展示值。
+// 人民币只是显示层, 换算发生在读 store 的这一刻; 切换货币后由调用方失效查询缓存触发重算。
 export function formatMoney(num: number | undefined): { raw: number, formatted: { value: string, unit: string } } {
+  if (useSettingStore.getState().displayCurrency === 'CNY') {
+    return {
+      raw: num ?? 0,
+      formatted: formatNumber(displayUSD(num ?? 0), [1000000000, 1000000, 1000, 1], ['¥', 'B¥', 'M¥', 'K¥', '¥', '¥']),
+    };
+  }
   return {
     raw: num ?? 0,
     formatted: formatNumber(num, [1000000000, 1000000, 1000, 1], ['$', 'B$', 'M$', 'K$', '$', '$']),
   };
+}
+
+// formatModelPrice 格式化每百万 token 的模型单价; 美元沿用原有的后置 $ 写法, 人民币改为前置 ¥。
+export function formatModelPrice(usd: number): string {
+  if (useSettingStore.getState().displayCurrency === 'CNY') {
+    return `¥${displayUSD(usd).toFixed(2)}`;
+  }
+  return `${usd.toFixed(2)}$`;
 }
 
 export function formatTime(ms: number | undefined): { raw: number, formatted: { value: string, unit: string } } {
