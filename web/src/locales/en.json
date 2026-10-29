@@ -247,6 +247,15 @@
                 "rebuilding": "Rebuilding...",
                 "success": "Price data rebuilt for {count} models",
                 "failed": "Failed to rebuild price data"
+            },
+            "exchangeRate": {
+                "label": "USD to CNY Rate",
+                "hint": "CNY display and input are converted at this rate; data stays in USD"
+            },
+            "displayCurrency": {
+                "label": "Display Currency",
+                "usd": "USD ($)",
+                "cny": "CNY (¥)"
             }
         },
         "account": {
@@ -383,7 +392,8 @@
             "output": "Output",
             "cacheRead": "Cache Read",
             "cacheWrite": "Cache Write",
-            "save": "Save"
+            "save": "Save",
+            "currencyHint": "Input in CNY; converted to USD automatically on save"
         }
     },
     "log": {

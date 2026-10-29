@@ -247,6 +247,15 @@
                 "rebuilding": "重建中...",
                 "success": "價格資料重建成功，共處理 {count} 個模型",
                 "failed": "價格資料重建失敗"
+            },
+            "exchangeRate": {
+                "label": "美元兌人民幣匯率",
+                "hint": "人民幣顯示與輸入按此匯率換算，資料仍以美元儲存"
+            },
+            "displayCurrency": {
+                "label": "金額顯示貨幣",
+                "usd": "美元 ($)",
+                "cny": "人民幣 (¥)"
             }
         },
         "account": {
@@ -383,7 +392,8 @@
             "output": "輸出",
             "cacheRead": "快取讀取",
             "cacheWrite": "快取寫入",
-            "save": "儲存"
+            "save": "儲存",
+            "currencyHint": "以人民幣輸入，儲存時自動換算為美元"
         }
     },
     "log": {

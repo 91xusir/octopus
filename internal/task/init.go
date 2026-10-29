@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/bestruirui/octopus/internal/model"
-	"github.com/bestruirui/octopus/internal/op"
-	"github.com/bestruirui/octopus/internal/price"
+	"github.com/91xusir/octopus/internal/model"
+	"github.com/91xusir/octopus/internal/op"
+	"github.com/91xusir/octopus/internal/price"
 	"github.com/charmbracelet/log"
 )
 

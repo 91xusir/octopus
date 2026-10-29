@@ -247,6 +247,15 @@
                 "rebuilding": "重建中...",
                 "success": "价格数据重建成功，共处理 {count} 个模型",
                 "failed": "价格数据重建失败"
+            },
+            "exchangeRate": {
+                "label": "美元兑人民币汇率",
+                "hint": "人民币显示与输入按此汇率换算，数据仍以美元保存"
+            },
+            "displayCurrency": {
+                "label": "金额显示货币",
+                "usd": "美元 ($)",
+                "cny": "人民币 (¥)"
             }
         },
         "account": {
@@ -383,7 +392,8 @@
             "output": "输出",
             "cacheRead": "缓存读取",
             "cacheWrite": "缓存写入",
-            "save": "保存"
+            "save": "保存",
+            "currencyHint": "以人民币输入，保存时自动换算为美元"
         }
     },
     "log": {

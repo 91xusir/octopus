@@ -2,6 +2,8 @@ import { lazy, Suspense, useDeferredValue, useEffect, useState, type ReactNode }
 import { useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'motion/react';
 import { useAuth } from '@/api/user';
+import { SettingKey, useSettingList } from '@/api/setting';
+import { DEFAULT_USD_CNY_RATE, getUSDCNYRate, setUSDCNYRate } from '@/stores/setting';
 import {
     apiKeyDashboardStatsQueryOptions,
     apiKeyListQueryOptions,
@@ -42,6 +44,25 @@ function InitialLoadingGate({ children }: { children: ReactNode }) {
     }, []);
 
     return children;
+}
+
+// CurrencySync 把后端设置里的美元兑人民币汇率同步进前端快照, 供格式化函数在 React 之外读取。
+// 汇率变化时失效全部查询, 让按美元缓存的价格与统计按新汇率重新格式化; 金额数据本身始终是美元。
+function CurrencySync() {
+    const { data: settings } = useSettingList();
+    const queryClient = useQueryClient();
+
+    useEffect(() => {
+        if (!settings) return;
+        const raw = settings.find((setting) => setting.key === SettingKey.USDCNYRate)?.value;
+        const parsed = raw === undefined ? NaN : parseFloat(raw);
+        const rate = Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_USD_CNY_RATE;
+        if (rate === getUSDCNYRate()) return;
+        setUSDCNYRate(rate);
+        void queryClient.invalidateQueries();
+    }, [settings, queryClient]);
+
+    return null;
 }
 
 // AppContainer 根据认证状态渲染登录页、API Key 页面或普通用户应用。
@@ -101,10 +122,14 @@ export function AppContainer() {
 
     if (!apiReady) return null;
 
+    // 登录后的两种界面都展示金额, 统一在这里同步汇率。
+    const currencySync = <CurrencySync />;
+
     // API Key 认证模式 - 显示 API Key Dashboard
     if (isAPIKeyAuth) {
         return (
             <InitialLoadingGate>
+                {currencySync}
                 <APIKeyDashboard />
             </InitialLoadingGate>
         );
@@ -124,6 +149,7 @@ export function AppContainer() {
         >
             <Suspense fallback={null}>
                 <InitialLoadingGate>
+                    {currencySync}
                     <AnimatePresence mode="sync">
                         <motion.div
                             key={visibleItem}

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/bestruirui/octopus/internal/model"
+	"github.com/91xusir/octopus/internal/model"
 	"gorm.io/gorm"
 )
 

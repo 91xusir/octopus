@@ -3,9 +3,9 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/bestruirui/octopus/internal/relay"
-	"github.com/bestruirui/octopus/internal/server/middleware"
-	"github.com/bestruirui/octopus/internal/server/router"
+	"github.com/91xusir/octopus/internal/relay"
+	"github.com/91xusir/octopus/internal/server/middleware"
+	"github.com/91xusir/octopus/internal/server/router"
 	"github.com/looplj/axonhub/llm"
 )
 

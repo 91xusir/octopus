@@ -5,6 +5,7 @@ import { useStatsDaily, useStatsHourly, type StatsMetricsFormatted } from '@/api
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { AnimatedNumber } from '@/components/common/AnimatedNumber';
 import { formatCount, formatMoney } from '@/lib/utils';
+import { useDisplayCurrency } from '@/stores/setting';
 import { useTheme } from '@/provider/theme';
 import { useHomeViewStore } from './store';
 import { MetricTabs } from './metric-tabs';
@@ -23,6 +24,8 @@ export function StatsChart() {
     const tMetric = useTranslations('home.metric');
     // 订阅主题: 切换时 :root 上 --chart-* 的取值会变, 需重渲染以重新取色。
     useTheme();
+    // 汇总与轴刻度在渲染期直接格式化金额, 订阅显示货币让切换立即生效。
+    useDisplayCurrency();
     // 屏内图表与分享舞台副本同时存在, 渐变 id 需唯一, 避免 url(#id) 指向另一份 defs。
     const gradientId = `fillMetric-${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
 
@@ -112,7 +115,18 @@ export function StatsChart() {
                             return `${formatted.formatted.value}${formatted.formatted.unit}`;
                         }}
                     />
-                    <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
+                    <ChartTooltip
+                        cursor={false}
+                        content={
+                            <ChartTooltipContent
+                                indicator="line"
+                                formatter={(value) => {
+                                    const formatted = metricType === 'cost' ? formatMoney(Number(value)) : formatCount(Number(value));
+                                    return <>{`${formatted.formatted.value}${formatted.formatted.unit}`}</>;
+                                }}
+                            />
+                        }
+                    />
                     <Area type="monotone" dataKey="value" stroke={chartColor} fill={`url(#${gradientId})`} />
                 </AreaChart>
             </ChartContainer>

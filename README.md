@@ -10,7 +10,6 @@
 
 </div>
 
-
 ## ✨ Features
 
 - 🔀 **Multi-Channel Aggregation** - Connect multiple LLM provider channels with unified management
@@ -25,28 +24,11 @@
 - 📦 **Lightweight Single-Binary Deployment** - Run as a single binary with no external runtime dependencies
 - 🗄️ **Multi-Database Support** - Support for SQLite, MySQL, PostgreSQL
 
-
 ## 🚀 Quick Start
-
-### 🐳 Docker
-
-Run directly:
-
-```bash
-docker run -d --name octopus -v /path/to/data:/app/data -p 8080:8080 bestrui/octopus
-```
-
-Or use docker compose:
-
-```bash
-wget https://raw.githubusercontent.com/bestruirui/octopus/refs/heads/master/docker-compose.yml
-docker compose up -d
-```
-
 
 ### 📦 Download from Release
 
-Download the binary for your platform from [Releases](https://github.com/bestruirui/octopus/releases), then run:
+Download the binary for your platform from [Releases](https://github.com/91xusir/octopus/releases), then run:
 
 ```bash
 ./octopus start
@@ -61,7 +43,7 @@ Download the binary for your platform from [Releases](https://github.com/bestrui
 
 ```bash
 # Clone the repository
-git clone https://github.com/bestruirui/octopus.git
+git clone https://github.com/91xusir/octopus.git
 cd octopus
 # Build frontend
 cd web && pnpm install && pnpm run build
@@ -220,7 +202,6 @@ All configuration options can be overridden via environment variables using the 
 </tr>
 </table>
 </div>
-
 
 ## 📖 Documentation
 

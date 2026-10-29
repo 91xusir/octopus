@@ -2,6 +2,7 @@ import { Check, Loader, Trash2, X } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useTranslations } from 'use-intl';
 import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
 type EditValues = {
     input: string;
@@ -62,6 +63,9 @@ type ModelEditOverlayProps = {
     brandColor: string;
     editValues: EditValues;
     isPending: boolean;
+    // 输入货币: CNY 模式下输入人民币, 保存时由调用方换算回美元; 切换时由调用方把当前值按汇率重定基。
+    currency: 'USD' | 'CNY';
+    onCurrencyChange: (currency: 'USD' | 'CNY') => void;
     onChange: (next: EditValues) => void;
     onCancel: () => void;
     onSave: () => void;
@@ -74,6 +78,8 @@ export function ModelEditOverlay({
     brandColor,
     editValues,
     isPending,
+    currency,
+    onCurrencyChange,
     onChange,
     onCancel,
     onSave,
@@ -93,6 +99,29 @@ export function ModelEditOverlay({
             <h3 className="text-sm font-semibold text-card-foreground line-clamp-1 mb-3">
                 {modelName}
             </h3>
+
+            <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex gap-1">
+                    {(['USD', 'CNY'] as const).map((option) => (
+                        <button
+                            key={option}
+                            type="button"
+                            onClick={() => onCurrencyChange(option)}
+                            className={cn(
+                                'h-7 rounded-lg border px-2.5 text-xs font-medium transition-colors',
+                                currency === option
+                                    ? 'border-primary/30 bg-primary text-primary-foreground'
+                                    : 'border-border bg-muted/20 text-muted-foreground hover:bg-muted/30'
+                            )}
+                        >
+                            {option === 'USD' ? 'USD $' : 'CNY ¥'}
+                        </button>
+                    ))}
+                </div>
+                {currency === 'CNY' && (
+                    <span className="text-[11px] text-muted-foreground text-right">{t('currencyHint')}</span>
+                )}
+            </div>
 
             <div className="grid grid-cols-2 gap-2">
                 <label className="grid gap-1 text-xs text-muted-foreground">

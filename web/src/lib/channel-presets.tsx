@@ -13,6 +13,7 @@ import ZhipuIcon from '@thesvg/react/zhipu';
 import XAIIcon from '@thesvg/react/xai-grok';
 import SiliconFlowIcon from '@thesvg/react/siliconcloud-siliconflow';
 import AzureIcon from '@thesvg/react/azure-azure-openai';
+import OllamaIcon from '@thesvg/react/ollama';
 import type { Dialect } from '@/api/channel';
 import type { Locale } from '@/stores/setting';
 
@@ -45,6 +46,15 @@ export const CHANNEL_PRESETS: ChannelPreset[] = [
         },
         dialect: 'generic',
         base_url: '',
+        openai_chat_completion_path: CHAT, openai_response_path: RESP, anthropic_message_path: ANTH,
+    },
+    {
+        id: 'ollama', label: 'Ollama', Icon: OllamaIcon, iconClassName: 'brightness-0 dark:invert',
+        description: {
+            zh_hans: '本地部署的 Ollama 模型服务', zh_hant: '本機部署的 Ollama 模型服務', en: 'Locally hosted Ollama server',
+        },
+        dialect: 'generic',
+        base_url: 'http://localhost:11434',
         openai_chat_completion_path: CHAT, openai_response_path: RESP, anthropic_message_path: ANTH,
     },
     {

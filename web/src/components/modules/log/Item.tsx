@@ -9,6 +9,7 @@ import { type RelayLogOverview, useLogRequestBody, useLogResponseBody, useStopRe
 import { useGroup, useUpdateGroup } from '@/api/group';
 import { Protocol } from '@/api/channel';
 import { getModelIcon } from '@/lib/model-icons';
+import { getUSDCNYRate, useDisplayCurrency } from '@/stores/setting';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
@@ -65,6 +66,9 @@ const PROTOCOL_LABELS: Record<number, string> = {
 
 // LogMetrics 渲染时间、API Key、耗时、费用和 Token 指标; card 变体用于卡片栅格, footer 变体用于弹窗底部。
 function LogMetrics({ log, now, brandColor, variant }: { log: RelayLogOverview; now: number; brandColor: string; variant: 'card' | 'footer' }) {
+    // 费用原始数据恒为美元, 人民币显示按汇率换算后加前缀以示区别。
+    const currency = useDisplayCurrency();
+    const costValue = currency === 'CNY' ? `¥${(log.cost * getUSDCNYRate()).toFixed(6)}` : log.cost.toFixed(6);
     const cachedTokens = log.usage.prompt_tokens_details?.cached_tokens ?? 0;
     // 缓存率取输入缓存占全部输入 Token 的比例, 无输入时为零。
     const cacheRate = log.usage.prompt_tokens > 0 ? Math.round((cachedTokens / log.usage.prompt_tokens) * 100) : 0;
@@ -92,7 +96,7 @@ function LogMetrics({ log, now, brandColor, variant }: { log: RelayLogOverview; 
         { key: 'completion', Icon: ArrowUpFromLine, iconClassName: 'size-3.5 shrink-0 text-purple-500', value: (requestActive ? log.output_chars.toLocaleString() : log.usage.completion_tokens.toLocaleString()), cellClassName: 'col-span-4 md:col-span-1' },
         { key: 'cacheWrite', Icon: Database, iconClassName: 'size-3.5 shrink-0 text-orange-500', value: (log.usage.prompt_tokens_details?.write_cached_tokens ?? 0).toLocaleString(), cellClassName: 'whitespace-nowrap col-span-4 md:col-span-1' },
         { key: 'speed', Icon: Gauge, iconClassName: 'size-3.5 shrink-0 text-sky-500', value: outputSpeed > 0 ? `${outputSpeed.toFixed(0)}${outputSpeedUnit}` : '-', cellClassName: 'whitespace-nowrap col-span-4 md:col-span-1' },
-        { key: 'cost', Icon: DollarSign, iconClassName: 'size-3.5 shrink-0 text-emerald-500', value: log.cost.toFixed(6), cellClassName: 'whitespace-nowrap col-span-4 md:col-span-1' },
+        { key: 'cost', Icon: DollarSign, iconClassName: 'size-3.5 shrink-0 text-emerald-500', value: costValue, cellClassName: 'whitespace-nowrap col-span-4 md:col-span-1' },
     ];
 
     return metrics.map((metric) => (
