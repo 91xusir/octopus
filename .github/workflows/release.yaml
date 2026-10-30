@@ -65,14 +65,22 @@ jobs:
       - name: Build
         run: bash scripts/build.sh
 
-      - name: Generate changelog
-        run: npx changelogithub
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-
       - name: Upload Release
         uses: softprops/action-gh-release@v3
         with:
           files: build/archives/*
           prerelease: false
           tag_name: ${{ steps.version.outputs.version }}
+          body: |
+            **octopus ${{ steps.version.outputs.version }}** · 基于 [bestruirui/octopus](https://github.com/bestruirui/octopus) 的个人构建
+
+            | 平台 | 文件 |
+            |---|---|
+            | Windows x64 | `octopus-windows-amd64.zip` |
+            | Linux x64 | `octopus-linux-amd64.zip` |
+            | Linux ARM64 | `octopus-linux-arm64.zip` |
+            | macOS Apple Silicon | `octopus-darwin-arm64.zip` |
+            | macOS Intel | `octopus-darwin-amd64.zip` |
+
+            解压后运行 `./octopus start`,访问 http://localhost:8080(默认账户 `admin` / `admin`,登录后请立即修改密码)。
+            完整性校验见 `SHA256SUMS`,使用说明见 [README](https://github.com/91xusir/octopus#readme)。
