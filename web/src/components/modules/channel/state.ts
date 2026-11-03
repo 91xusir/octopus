@@ -61,8 +61,9 @@ export function fromChannel(channel: ChannelDetail): ChannelFormState {
         keys: channel.keys.map(({ name, key, enabled }) => ({ name, key, enabled })),
         models: [...channel.models],
         grants: new Map(channel.grants.map((g) => [grantKey(g.model_name, g.key_name), g.protocols])),
-        custom_header: channel.custom_header,
-        response_header: channel.response_header,
+        // 旧渠道行的新列可能反序列化为 null, 兜底为空数组以免渲染与保存崩溃。
+        custom_header: channel.custom_header ?? [],
+        response_header: channel.response_header ?? [],
         console_url: channel.console_url,
         channel_proxy: channel.channel_proxy,
         param_override: channel.param_override,

@@ -182,6 +182,9 @@ func normalizeChannelConfig(config model.ChannelConfig) (model.ChannelConfig, er
 	if config.CustomHeader == nil {
 		config.CustomHeader = []model.CustomHeader{}
 	}
+	if config.ResponseHeaders == nil {
+		config.ResponseHeaders = []model.CustomHeader{}
+	}
 
 	config.ChannelProxy = strings.TrimSpace(config.ChannelProxy)
 	config.ParamOverride = strings.TrimSpace(config.ParamOverride)
