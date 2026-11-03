@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"syscall"
 
+	"github.com/91xusir/octopus/internal/conf"
 	"github.com/91xusir/octopus/internal/utils/shutdown"
 	"github.com/charmbracelet/log"
 )
@@ -50,7 +51,12 @@ func UpdateCore() error {
 		return err
 	}
 
-	newExec := filepath.Join(tmpDir, execName)
+	// 归档内的可执行文件名按 APP_NAME 取, 与运行中的文件名无关: 改名前的旧安装可能仍叫 octopus.exe。
+	archiveExec := conf.APP_NAME
+	if runtime.GOOS == "windows" {
+		archiveExec += ".exe"
+	}
+	newExec := filepath.Join(tmpDir, archiveExec)
 	if info, err := os.Stat(newExec); err != nil || info.IsDir() {
 		log.Warnf("new executable not found at %s: %v", newExec, err)
 		return fmt.Errorf("new executable not found in archive root: %w", err)
@@ -100,45 +106,29 @@ func copyFile(src, dst string) error {
 	return err
 }
 
-// getDownloadFilename 返回当前平台对应的发布归档名称。
+// getDownloadFilename 返回当前平台对应的发布归档名称, 矩阵与 scripts/build.sh 的发布目标一致。
 func getDownloadFilename() (string, error) {
 	arch := runtime.GOARCH
 	goos := runtime.GOOS
 
 	switch goos {
 	case "windows":
-		switch arch {
-		case "amd64":
-			return "octopus-windows-amd64.zip", nil
+		if arch == "amd64" {
+			return conf.APP_NAME + "-windows-amd64.zip", nil
 		}
 	case "darwin":
 		switch arch {
 		case "amd64":
-			return "octopus-darwin-amd64.zip", nil
+			return conf.APP_NAME + "-darwin-amd64.zip", nil
 		case "arm64":
-			return "octopus-darwin-arm64.zip", nil
+			return conf.APP_NAME + "-darwin-arm64.zip", nil
 		}
 	case "linux":
 		switch arch {
-		case "386":
-			return "octopus-linux-386.zip", nil
 		case "amd64":
-			return "octopus-linux-amd64.zip", nil
-		case "arm":
-			return "octopus-linux-arm.zip", nil
+			return conf.APP_NAME + "-linux-amd64.zip", nil
 		case "arm64":
-			return "octopus-linux-arm64.zip", nil
-		}
-	case "android":
-		switch arch {
-		case "386":
-			return "octopus-android-386.zip", nil
-		case "amd64":
-			return "octopus-android-amd64.zip", nil
-		case "arm":
-			return "octopus-android-arm.zip", nil
-		case "arm64":
-			return "octopus-android-arm64.zip", nil
+			return conf.APP_NAME + "-linux-arm64.zip", nil
 		}
 	}
 	return "", fmt.Errorf("unsupported platform: %s/%s", goos, arch)
