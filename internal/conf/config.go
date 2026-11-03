@@ -55,14 +55,11 @@ func Load(path string) error {
 		path = filepath.Join(configBase(), path)
 	}
 
-	v.SetConfigFile(path)
-	v.SetConfigType("json")
-
-	// 读取配置
-	if err := v.ReadInConfig(); err != nil {
-		var notFound viper.ConfigFileNotFoundError
-		if !errors.As(err, &notFound) {
-			return fmt.Errorf("read config: %w", err)
+	// SetConfigFile 指定路径后, 文件缺失时 ReadInConfig 返回的是 PathError 而非
+	// ConfigFileNotFoundError, 故用 Stat 显式判断存在性: 不存在则生成默认配置文件。
+	if _, err := os.Stat(path); err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("stat config: %w", err)
 		}
 
 		log.Infof("Config file not found, creating default config: %s", path)
@@ -72,9 +69,20 @@ func Load(path string) error {
 			return fmt.Errorf("create config directory: %w", err)
 		}
 
+		v.SetConfigFile(path)
+		v.SetConfigType("json")
+
 		// 写入默认配置
 		if err := v.SafeWriteConfigAs(path); err != nil {
 			return fmt.Errorf("write default config: %w", err)
+		}
+	} else {
+		v.SetConfigFile(path)
+		v.SetConfigType("json")
+
+		// 读取配置
+		if err := v.ReadInConfig(); err != nil {
+			return fmt.Errorf("read config: %w", err)
 		}
 	}
 

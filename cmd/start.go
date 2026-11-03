@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/91xusir/octopus/internal/conf"
 	"github.com/91xusir/octopus/internal/db"
 	"github.com/91xusir/octopus/internal/op"
@@ -16,12 +18,16 @@ var cfgFile string
 var startCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Start " + conf.APP_NAME,
-	PreRun: func(cmd *cobra.Command, args []string) {
+	PreRunE: func(cmd *cobra.Command, args []string) error {
 		conf.PrintBanner()
-		conf.Load(cfgFile)
+		// 配置加载失败必须终止: 继续运行会拿零值配置(如空数据库类型)启动。
+		if err := conf.Load(cfgFile); err != nil {
+			return fmt.Errorf("load config: %w", err)
+		}
 		if level, err := log.ParseLevel(conf.AppConfig.Log.Level); err == nil {
 			log.SetLevel(level)
 		}
+		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		shutdown.Init(log.Default())
