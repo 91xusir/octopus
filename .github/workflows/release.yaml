@@ -6,6 +6,7 @@ on:
       - master
     paths:
       - main.go
+  workflow_dispatch: {}
 
 permissions:
   contents: write
