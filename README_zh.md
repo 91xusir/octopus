@@ -1,10 +1,10 @@
 <div align="center">
 
-<img src="web/public/logo.svg" alt="Octopus Logo" width="100">
+<img src="web/public/logo.svg" alt="AIAPi Logo" width="100">
 
-### Octopus
+### AIAPi
 
-[bestruirui/octopus](https://github.com/bestruirui/octopus) 的个人修改版(基于上游 v0.13.13)。
+**AIAPi**(原名 Octopus)—— [bestruirui/octopus](https://github.com/bestruirui/octopus) 的个人修改版(基于上游 v0.13.13)。
 
 </div>
 

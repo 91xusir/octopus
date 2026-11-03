@@ -1,10 +1,10 @@
 <div align="center">
 
-<img src="web/public/logo.svg" alt="Octopus Logo" width="100">
+<img src="web/public/logo.svg" alt="AIAPi Logo" width="100">
 
-### Octopus
+### AIAPi
 
-A personal fork of [bestruirui/octopus](https://github.com/bestruirui/octopus) (based on upstream v0.13.13). 简体中文见 [README_zh.md](README_zh.md)。
+**AIAPi**(原名 Octopus)—— fork of [bestruirui/octopus](https://github.com/bestruirui/octopus) (based on upstream v0.13.13). 简体中文见 [README_zh.md](README_zh.md)。
 
 </div>
 
