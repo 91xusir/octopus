@@ -28,6 +28,7 @@ export type ChannelPreset = {
     description: Record<Locale, string>; // 模板在不同界面语言下的说明。
     dialect: Dialect;
     base_url: string;
+    console_url: string; // 上游控制台链接, 便于跳转充值与密钥管理; 没有公开控制台的服务商留空。
     openai_chat_completion_path: string;
     openai_response_path: string;
     anthropic_message_path: string;
@@ -44,6 +45,7 @@ export const CHANNEL_PRESETS: ChannelPreset[] = [
         description: {
             zh_hans: '兼容多种模型服务商的统一接口', zh_hant: '兼容多種模型服務商的統一介面', en: 'Unified API compatible with multiple model providers',
         },
+        console_url: '',
         dialect: 'generic',
         base_url: '',
         openai_chat_completion_path: CHAT, openai_response_path: RESP, anthropic_message_path: ANTH,
@@ -53,6 +55,7 @@ export const CHANNEL_PRESETS: ChannelPreset[] = [
         description: {
             zh_hans: '本地部署的 Ollama 模型服务', zh_hant: '本機部署的 Ollama 模型服務', en: 'Locally hosted Ollama server',
         },
+        console_url: '',
         dialect: 'generic',
         base_url: 'http://localhost:11434',
         openai_chat_completion_path: CHAT, openai_response_path: RESP, anthropic_message_path: ANTH,
@@ -62,6 +65,7 @@ export const CHANNEL_PRESETS: ChannelPreset[] = [
         description: {
             zh_hans: 'OpenAI 官方 API', zh_hant: 'OpenAI 官方 API', en: 'Official OpenAI API',
         },
+        console_url: 'https://platform.openai.com',
         dialect: 'generic',
         base_url: 'https://api.openai.com',
         openai_chat_completion_path: CHAT, openai_response_path: RESP, anthropic_message_path: ANTH,
@@ -71,6 +75,7 @@ export const CHANNEL_PRESETS: ChannelPreset[] = [
         description: {
             zh_hans: 'Anthropic 官方 API', zh_hant: 'Anthropic 官方 API', en: 'Official Anthropic API',
         },
+        console_url: 'https://console.anthropic.com',
         dialect: 'generic',
         base_url: 'https://api.anthropic.com',
         openai_chat_completion_path: CHAT, openai_response_path: RESP, anthropic_message_path: ANTH,
@@ -80,6 +85,7 @@ export const CHANNEL_PRESETS: ChannelPreset[] = [
         description: {
             zh_hans: '火山引擎大模型服务平台', zh_hant: '火山引擎大模型服務平台', en: 'Volcengine Ark model service',
         },
+        console_url: 'https://console.volcengine.com/ark',
         dialect: 'generic',
         base_url: 'https://ark.cn-beijing.volces.com',
         openai_chat_completion_path: '/api/v3/chat/completions', openai_response_path: '/api/v3/responses', anthropic_message_path: '/api/compatible/v1/messages',
@@ -89,6 +95,7 @@ export const CHANNEL_PRESETS: ChannelPreset[] = [
         description: {
             zh_hans: '火山方舟编程套餐 API', zh_hant: '火山方舟編程套餐 API', en: 'Volcengine Ark Coding Plan API',
         },
+        console_url: 'https://console.volcengine.com/ark',
         dialect: 'generic',
         base_url: 'https://ark.cn-beijing.volces.com',
         openai_chat_completion_path: '/api/coding/v3/chat/completions', openai_response_path: '/api/coding/v3/responses', anthropic_message_path: '/api/coding/v1/messages',
@@ -98,6 +105,7 @@ export const CHANNEL_PRESETS: ChannelPreset[] = [
         description: {
             zh_hans: 'DeepSeek 官方 API', zh_hant: 'DeepSeek 官方 API', en: 'Official DeepSeek API',
         },
+        console_url: 'https://platform.deepseek.com',
         dialect: 'generic',
         base_url: 'https://api.deepseek.com',
         openai_chat_completion_path: '/chat/completions', openai_response_path: '/responses', anthropic_message_path: '/anthropic/v1/messages',
@@ -107,6 +115,7 @@ export const CHANNEL_PRESETS: ChannelPreset[] = [
         description: {
             zh_hans: '统一访问多种模型', zh_hant: '統一存取多種模型', en: 'Unified access to multiple models',
         },
+        console_url: 'https://openrouter.ai/settings/credits',
         dialect: 'generic',
         base_url: 'https://openrouter.ai/api',
         openai_chat_completion_path: CHAT, openai_response_path: RESP, anthropic_message_path: ANTH,
@@ -116,6 +125,7 @@ export const CHANNEL_PRESETS: ChannelPreset[] = [
         description: {
             zh_hans: '高速推理 API', zh_hant: '高速推理 API', en: 'High-speed inference API',
         },
+        console_url: 'https://console.groq.com',
         dialect: 'generic',
         base_url: 'https://api.groq.com/openai',
         openai_chat_completion_path: CHAT, openai_response_path: RESP, anthropic_message_path: ANTH,
@@ -125,6 +135,7 @@ export const CHANNEL_PRESETS: ChannelPreset[] = [
         description: {
             zh_hans: '阿里云通义千问 API', zh_hant: '阿里雲通義千問 API', en: 'Alibaba Cloud Qwen API',
         },
+        console_url: 'https://bailian.console.aliyun.com/',
         dialect: 'generic',
         base_url: 'https://dashscope.aliyuncs.com',
         openai_chat_completion_path: '/compatible-mode/v1/chat/completions', openai_response_path: '/compatible-mode/v1/responses', anthropic_message_path: '/apps/anthropic/v1/messages',
@@ -134,6 +145,7 @@ export const CHANNEL_PRESETS: ChannelPreset[] = [
         description: {
             zh_hans: '千问 Token Plan 专属 API', zh_hant: '千問 Token Plan 專屬 API', en: 'Qwen Token Plan API',
         },
+        console_url: 'https://bailian.console.aliyun.com/',
         dialect: 'generic',
         base_url: 'https://token-plan.maas.qianwenaiapi.com',
         openai_chat_completion_path: '/compatible-mode/v1/chat/completions', openai_response_path: '/compatible-mode/v1/responses', anthropic_message_path: '/apps/anthropic/v1/messages',
@@ -143,6 +155,7 @@ export const CHANNEL_PRESETS: ChannelPreset[] = [
         description: {
             zh_hans: '月之暗面 Kimi API', zh_hant: '月之暗面 Kimi API', en: 'Moonshot Kimi API',
         },
+        console_url: 'https://platform.moonshot.cn/console',
         dialect: 'generic',
         base_url: 'https://api.moonshot.cn',
         openai_chat_completion_path: CHAT, openai_response_path: RESP, anthropic_message_path: '/anthropic/v1/messages',
@@ -152,6 +165,7 @@ export const CHANNEL_PRESETS: ChannelPreset[] = [
         description: {
             zh_hans: 'Kimi Code 会员订阅 API', zh_hant: 'Kimi Code 會員訂閱 API', en: 'Kimi Code subscription API',
         },
+        console_url: 'https://platform.moonshot.cn/console',
         dialect: 'generic',
         base_url: 'https://api.kimi.com',
         openai_chat_completion_path: '/coding/v1/chat/completions', openai_response_path: '/coding/v1/responses', anthropic_message_path: '/coding/v1/messages',
@@ -161,6 +175,7 @@ export const CHANNEL_PRESETS: ChannelPreset[] = [
         description: {
             zh_hans: '智谱 AI 大模型 API', zh_hant: '智譜 AI 大模型 API', en: 'Zhipu AI GLM API',
         },
+        console_url: 'https://open.bigmodel.cn',
         dialect: 'generic',
         base_url: 'https://open.bigmodel.cn',
         openai_chat_completion_path: '/api/paas/v4/chat/completions', openai_response_path: '/api/v1/responses', anthropic_message_path: '/api/anthropic/v1/messages',
@@ -170,6 +185,7 @@ export const CHANNEL_PRESETS: ChannelPreset[] = [
         description: {
             zh_hans: '智谱 GLM 编程套餐 API', zh_hant: '智譜 GLM 編程套餐 API', en: 'Zhipu GLM Coding Plan API',
         },
+        console_url: 'https://open.bigmodel.cn',
         dialect: 'generic',
         base_url: 'https://open.bigmodel.cn',
         openai_chat_completion_path: '/api/coding/paas/v4/chat/completions', openai_response_path: '/api/v1/responses', anthropic_message_path: '/api/anthropic/v1/messages',
@@ -179,6 +195,7 @@ export const CHANNEL_PRESETS: ChannelPreset[] = [
         description: {
             zh_hans: 'xAI Grok API', zh_hant: 'xAI Grok API', en: 'xAI Grok API',
         },
+        console_url: 'https://console.x.ai',
         dialect: 'generic',
         base_url: 'https://api.x.ai',
         openai_chat_completion_path: CHAT, openai_response_path: RESP, anthropic_message_path: ANTH,
@@ -188,6 +205,7 @@ export const CHANNEL_PRESETS: ChannelPreset[] = [
         description: {
             zh_hans: '硅基流动模型 API', zh_hant: '矽基流動模型 API', en: 'SiliconFlow model API',
         },
+        console_url: 'https://cloud.siliconflow.cn',
         dialect: 'generic',
         base_url: 'https://api.siliconflow.cn',
         openai_chat_completion_path: CHAT, openai_response_path: RESP, anthropic_message_path: ANTH,
@@ -197,6 +215,7 @@ export const CHANNEL_PRESETS: ChannelPreset[] = [
         description: {
             zh_hans: 'Azure 托管的 OpenAI API', zh_hant: 'Azure 託管的 OpenAI API', en: 'Azure-hosted OpenAI API',
         },
+        console_url: 'https://portal.azure.com',
         dialect: 'generic',
         base_url: '',
         openai_chat_completion_path: '/openai/v1/chat/completions', openai_response_path: '/openai/v1/responses', anthropic_message_path: ANTH,

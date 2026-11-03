@@ -455,7 +455,8 @@
             "edit": "编辑",
             "delete": "删除",
             "confirmDelete": "确认删除",
-            "cancel": "取消"
+            "cancel": "取消",
+            "console": "上游控制台"
         },
         "form": {
             "stepPreset": "开始",
@@ -491,6 +492,7 @@
             "customHeaderKey": "Header Key",
             "customHeaderValue": "Header Value",
             "customHeaderAdd": "添加 Header",
+            "consoleUrl": "上游控制台链接",
             "edit": "编辑",
             "delete": "删除",
             "submit": "创建",
@@ -499,7 +501,9 @@
             "backToStats": "返回统计",
             "grantClearAll": "清空全部模型",
             "modelRemove": "移除模型",
-            "grantRemove": "移除该凭据的授权"
+            "grantRemove": "移除该凭据的授权",
+            "responseHeader": "自定义响应 Header",
+            "responseHeaderHint": "写入客户端响应；同名覆盖，不同新增"
         }
     }
 }

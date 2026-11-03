@@ -455,7 +455,8 @@
             "edit": "Edit",
             "delete": "Delete",
             "confirmDelete": "Confirm Delete",
-            "cancel": "Cancel"
+            "cancel": "Cancel",
+            "console": "Upstream console"
         },
         "form": {
             "stepPreset": "Start",
@@ -491,6 +492,7 @@
             "customHeaderKey": "Header key",
             "customHeaderValue": "Header value",
             "customHeaderAdd": "Add header",
+            "consoleUrl": "Upstream Console URL",
             "edit": "Edit",
             "delete": "Delete",
             "submit": "Create",
@@ -499,7 +501,9 @@
             "backToStats": "Back to Stats",
             "grantClearAll": "Clear all models",
             "modelRemove": "Remove model",
-            "grantRemove": "Remove this key’s grant"
+            "grantRemove": "Remove this key’s grant",
+            "responseHeader": "Custom Response Headers",
+            "responseHeaderHint": "Written to the client response; same name replaces, different adds"
         }
     }
 }

@@ -35,7 +35,9 @@ type ChannelConfig struct {
 	AnthropicMessagePath     string         `json:"anthropic_message_path" gorm:"column:anthropic_message_path;default:/v1/messages"`                   // Anthropic Messages 请求路径; 留空由后端填默认路径。
 	Proxy                    bool           `json:"proxy" gorm:"default:false"`                                                                         // 是否使用代理。
 	ChannelProxy             string         `json:"channel_proxy"`                                                                                      // 渠道专用代理地址; 留空表示不用渠道专用代理。
-	CustomHeader             []CustomHeader `json:"custom_header" gorm:"serializer:json"`                                                               // 追加到上游请求的 Header。
+	CustomHeader             []CustomHeader `json:"custom_header" gorm:"serializer:json"`                                                               // 追加到上游请求的 Header: 同名覆盖, 不同新增。
+	ResponseHeaders          []CustomHeader `json:"response_header" gorm:"serializer:json"`                                                             // 写入客户端响应的 Header: 同名覆盖, 不同新增。
+	ConsoleURL               string         `json:"console_url"`                                                                                        // 上游控制台链接, 点击跳转便于充值与密钥管理; 留空不展示入口。
 	ParamOverride            string         `json:"param_override"`                                                                                     // 请求参数覆盖配置; 留空表示不覆盖。
 	MatchRegex               string         `json:"match_regex"`                                                                                        // 拉取模型列表时的过滤表达式; 留空表示不过滤。
 }
@@ -113,6 +115,7 @@ type ChannelStats struct {
 	ChannelID    int                 `json:"channel_id"`   // 渠道主键。
 	ChannelName  string              `json:"channel_name"` // 渠道名称。
 	Enabled      bool                `json:"enabled"`      // 渠道是否可用, 供列表页的开关与过滤使用。
+	ConsoleURL   string              `json:"console_url"`  // 上游控制台链接, 供列表页跳转; 留空表示未配置。
 	Models       []ChannelModelStats `json:"models"`       // 该渠道各模型的独立统计, 恒为数组; 长度即渠道的模型个数。
 	StatsMetrics                     // 渠道自身的累计统计。
 }

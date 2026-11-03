@@ -89,6 +89,7 @@ function ChannelFormFields({ channel, onBack }: { channel?: ChannelDetail; onBac
             name: state.name || preset.label,
             dialect: preset.dialect,
             base_url: preset.base_url,
+            console_url: preset.console_url,
             openai_chat_completion_path: preset.openai_chat_completion_path,
             openai_response_path: preset.openai_response_path,
             anthropic_message_path: preset.anthropic_message_path,
@@ -187,6 +188,17 @@ function ChannelFormFields({ channel, onBack }: { channel?: ChannelDetail; onBac
                                     required
                                 />
                             </div>
+                            <div className="space-y-2">
+                                <Label htmlFor={`${idPrefix}-console-url`}>{t('consoleUrl')}</Label>
+                                <Input
+                                    id={`${idPrefix}-console-url`}
+                                    type="url"
+                                    value={state.console_url}
+                                    onChange={(e) => setState({ ...state, console_url: e.target.value })}
+                                    placeholder="https://..."
+                                    className="rounded-xl"
+                                />
+                            </div>
                             {([
                                 ['openai_chat_completion_path', 'OpenAI Chat'],
                                 ['openai_response_path', 'OpenAI Responses'],
@@ -246,55 +258,21 @@ function ChannelFormFields({ channel, onBack }: { channel?: ChannelDetail; onBac
                                 />
                             </div>
 
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <Label>{t('customHeader')}</Label>
-                                    <IconButton
-                                        onClick={() => setState({
-                                            ...state,
-                                            custom_header: [...state.custom_header, { header_key: '', header_value: '' }],
-                                        })}
-                                        className="size-9"
-                                        tip={t('customHeaderAdd')}
-                                    >
-                                        <Plus className="size-4" />
-                                    </IconButton>
-                                </div>
-                                {/* 列名只在有行时出现, 两列各占一半, 与下方输入框对齐; 末尾留出删除按钮的宽度。 */}
-                                {state.custom_header.length > 0 && (
-                                    <div className="flex items-center gap-2">
-                                        <Label className="flex-1 text-muted-foreground">{t('customHeaderKey')}</Label>
-                                        <Label className="flex-1 text-muted-foreground">{t('customHeaderValue')}</Label>
-                                        <span className="size-9 shrink-0" />
-                                    </div>
-                                )}
-                                {state.custom_header.map((header, idx) => (
-                                    <div key={idx} className="flex items-center gap-2">
-                                        {(['header_key', 'header_value'] as const).map((field) => (
-                                            <Input
-                                                key={field}
-                                                value={header[field]}
-                                                onChange={(e) => setState({
-                                                    ...state,
-                                                    custom_header: state.custom_header.map((h, i) =>
-                                                        i === idx ? { ...h, [field]: e.target.value } : h),
-                                                })}
-                                                className="rounded-xl flex-1"
-                                            />
-                                        ))}
-                                        <IconButton
-                                            onClick={() => setState({
-                                                ...state,
-                                                custom_header: state.custom_header.filter((_, i) => i !== idx),
-                                            })}
-                                            className="size-9 hover:text-destructive"
-                                            tip={t('delete')}
-                                        >
-                                            <Trash2 className="size-4" />
-                                        </IconButton>
-                                    </div>
-                                ))}
-                            </div>
+                            <HeaderListField
+                                idPrefix={idPrefix}
+                                label={t('customHeader')}
+                                addTip={t('customHeaderAdd')}
+                                headers={state.custom_header}
+                                onChange={(headers) => setState({ ...state, custom_header: headers })}
+                            />
+                            <HeaderListField
+                                idPrefix={`${idPrefix}-resp`}
+                                label={t('responseHeader')}
+                                hint={t('responseHeaderHint')}
+                                addTip={t('customHeaderAdd')}
+                                headers={state.response_header}
+                                onChange={(headers) => setState({ ...state, response_header: headers })}
+                            />
                         </div>
                     )}
                 </div>
@@ -314,5 +292,64 @@ function ChannelFormFields({ channel, onBack }: { channel?: ChannelDetail; onBac
                 </div>
             </div>
         </form>
+    );
+}
+
+
+// HeaderListField 编辑一组自定义 Header 行; 请求与响应两侧共用, 保存值与生效语义由后端统一处理。
+// 标签行左侧是标题与可选提示, 右侧是添加按钮; 列名只在有行时出现, 与输入框两列对齐。
+function HeaderListField({ idPrefix, label, hint, addTip, headers, onChange }: {
+    idPrefix: string;
+    label: string;
+    hint?: string;
+    addTip: string;
+    headers: { header_key: string; header_value: string }[];
+    onChange: (next: { header_key: string; header_value: string }[]) => void;
+}) {
+    const t = useTranslations('channel.form');
+    return (
+        <div className="space-y-2">
+            <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                    <Label>{label}</Label>
+                    {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+                </div>
+                <IconButton
+                    onClick={() => onChange([...headers, { header_key: '', header_value: '' }])}
+                    className="size-9"
+                    tip={addTip}
+                >
+                    <Plus className="size-4" />
+                </IconButton>
+            </div>
+            {headers.length > 0 && (
+                <div className="flex items-center gap-2">
+                    <Label className="flex-1 text-muted-foreground">{t('customHeaderKey')}</Label>
+                    <Label className="flex-1 text-muted-foreground">{t('customHeaderValue')}</Label>
+                    <span className="size-9 shrink-0" />
+                </div>
+            )}
+            {headers.map((header, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                    {(['header_key', 'header_value'] as const).map((field) => (
+                        <Input
+                            key={field}
+                            id={`${idPrefix}-${field}-${idx}`}
+                            value={header[field]}
+                            onChange={(e) => onChange(headers.map((h, i) =>
+                                i === idx ? { ...h, [field]: e.target.value } : h))}
+                            className="rounded-xl flex-1"
+                        />
+                    ))}
+                    <IconButton
+                        onClick={() => onChange(headers.filter((_, i) => i !== idx))}
+                        className="size-9 hover:text-destructive"
+                        tip={t('delete')}
+                    >
+                        <Trash2 className="size-4" />
+                    </IconButton>
+                </div>
+            ))}
+        </div>
     );
 }

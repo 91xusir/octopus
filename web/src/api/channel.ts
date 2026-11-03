@@ -70,6 +70,8 @@ export type ChannelDetail = {
     grants: ChannelGrant[];
     proxy: boolean;
     custom_header: CustomHeader[];
+    response_header: CustomHeader[];
+    console_url: string;
     param_override: string;
     channel_proxy: string;
     match_regex: string;
@@ -88,6 +90,7 @@ export type ChannelStats = StatsMetrics & {
     channel_id: number;
     channel_name: string;
     enabled: boolean;
+    console_url: string;
     models: ChannelModelStats[];
 };
 
@@ -105,6 +108,7 @@ export type ChannelStatsFormatted = {
     channel_id: number;
     channel_name: string;
     enabled: boolean;
+    console_url: string;
     models: ChannelModelStatsFormatted[];
     formatted: StatsMetricsFormatted;
 };
@@ -146,6 +150,7 @@ const channelStatsFormattedQueryOptions = queryOptions({
         channel_id: item.channel_id,
         channel_name: item.channel_name,
         enabled: item.enabled,
+        console_url: item.console_url,
         models: item.models.map((channelModel) => ({
             model_id: channelModel.model_id,
             model_name: channelModel.model_name,

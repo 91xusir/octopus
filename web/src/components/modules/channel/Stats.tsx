@@ -7,6 +7,7 @@ import {
     Copy,
     DollarSign,
     Download,
+    ExternalLink,
     Eye,
     EyeOff,
     FileText,
@@ -219,6 +220,19 @@ export function ChannelStats({ channel, onEdit }: {
                             <button type="button" onClick={handleShare} disabled={isSharing} className="flex size-6 items-center justify-center rounded-md text-muted-foreground/60 transition-colors hover:text-foreground disabled:opacity-50">
                                 <Share2 className="size-3.5" />
                             </button>
+                            {/* 上游控制台入口: 配置了 console_url 才出现, 新窗口打开便于充值与密钥管理。 */}
+                            {channel.console_url && (
+                                <a
+                                    href={channel.console_url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    aria-label={t('console')}
+                                    title={t('console')}
+                                    className="flex size-6 items-center justify-center rounded-md text-muted-foreground/60 transition-colors hover:text-foreground"
+                                >
+                                    <ExternalLink className="size-3.5" />
+                                </a>
+                            )}
                             {isConfirmingDelete ? (
                                 <>
                                     <button

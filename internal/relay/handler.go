@@ -249,6 +249,8 @@ func Forward(format llm.APIFormat) gin.HandlerFunc {
 			for key, values := range result.header {
 				c.Writer.Header()[key] = values
 			}
+			// 渠道配置的响应 Header 最后写入: 同名覆盖透传值, 不同新增, 流式与非流式一致生效。
+			applyResponseHeaders(channel, c.Writer.Header())
 
 			// 非流式响应已经完整取得, 提交后一次写给客户端。
 			if !metadata.Streaming {

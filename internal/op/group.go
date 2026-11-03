@@ -2,6 +2,7 @@ package op
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"sort"
@@ -292,4 +293,67 @@ func groupSnapshot(group model.Group) model.Group {
 		group.Items[i].Available = channel.Enabled && channelKey.Enabled
 	}
 	return group
+}
+
+// AutoGroupName 是默认分组的固定名称, 客户端可直接以它作为模型名聚合全部渠道。
+const AutoGroupName = "auto"
+
+// autoGroupAttach 确保默认分组 auto 存在, 并把渠道尚未挂入该分组的授权追加为分组项:
+// 渠道创建时全量挂入, 更新时只补新增授权, 用户从 auto 手动移除的成员不会被自动加回。
+// before 为事务前的渠道授权主键集合, 创建渠道时传 nil 表示全部视为新增。
+// 授权被删除时分组项随外键级联删除, auto 分组无需自行清理;
+// 已挂成员与新成员由 (group_id, channel_grant_id) 唯一约束兜底, 重复执行无副作用。
+func autoGroupAttach(tx *gorm.DB, channelID int, before map[int]bool) error {
+	var grantIDs []int
+	if err := tx.Model(&model.ChannelGrant{}).
+		Joins("JOIN channel_models ON channel_models.id = channel_grants.channel_model_id").
+		Where("channel_models.channel_id = ?", channelID).
+		Pluck("channel_grants.id", &grantIDs).Error; err != nil {
+		return fmt.Errorf("failed to list channel grants: %w", err)
+	}
+
+	var group model.Group
+	if err := tx.Where("name = ?", AutoGroupName).First(&group).Error; err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return fmt.Errorf("failed to query auto group: %w", err)
+		}
+		// 默认分组按故障转移建组: 多渠道聚合时由路由自动选择可用成员。
+		group = model.Group{Name: AutoGroupName, Mode: model.GroupModeFailover, RelayConfig: model.DefaultGroupRelayConfig()}
+		if err := tx.Create(&group).Error; err != nil {
+			// 同名分组可能刚被并发创建, 命中唯一约束时改读已有行。
+			if readErr := tx.Where("name = ?", AutoGroupName).First(&group).Error; readErr != nil {
+				return fmt.Errorf("failed to create auto group: %w", err)
+			}
+		}
+	}
+
+	// First 不加载关联, 分组项显式查询: 顺带取当前最大优先级, 新成员按顺序追加在其后。
+	var existing []model.GroupItem
+	if err := tx.Where("group_id = ?", group.ID).Find(&existing).Error; err != nil {
+		return fmt.Errorf("failed to list auto group items: %w", err)
+	}
+	have := make(map[int]bool, len(existing))
+	maxPriority := 0
+	for _, item := range existing {
+		have[item.ChannelGrantID] = true
+		if item.Priority > maxPriority {
+			maxPriority = item.Priority
+		}
+	}
+
+	items := make([]model.GroupItem, 0, len(grantIDs))
+	for _, grantID := range grantIDs {
+		if before[grantID] || have[grantID] {
+			continue
+		}
+		maxPriority++
+		items = append(items, model.GroupItem{GroupID: group.ID, ChannelGrantID: grantID, Priority: maxPriority})
+	}
+	if len(items) == 0 {
+		return nil
+	}
+	if err := tx.Create(&items).Error; err != nil {
+		return fmt.Errorf("failed to attach auto group items: %w", err)
+	}
+	return nil
 }

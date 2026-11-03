@@ -3,6 +3,7 @@ package relay
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"regexp"
 	"slices"
 	"strings"
@@ -91,4 +92,15 @@ func applyChannelConfig(channel model.Channel, request *httpclient.Request) erro
 		request.Headers.Set(header.HeaderKey, value)
 	}
 	return nil
+}
+
+// applyResponseHeaders 把渠道配置的响应 Header 写入客户端响应: 同名覆盖, 不同新增。
+// 值为纯文本, 不支持引用客户端请求头的占位符; 写入发生在响应提交前, 流式与非流式一致生效。
+func applyResponseHeaders(channel model.Channel, header http.Header) {
+	for _, custom := range channel.ResponseHeaders {
+		if custom.HeaderKey == "" {
+			continue
+		}
+		header.Set(custom.HeaderKey, custom.HeaderValue)
+	}
 }
