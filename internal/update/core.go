@@ -81,8 +81,19 @@ func UpdateCore() error {
 	_ = os.RemoveAll(oldPath)
 
 	log.Infof("update core success")
-	go restartExecutable(execPath)
 	return nil
+}
+
+// RestartSelf 以当前命令行参数重启自身, 供更新流程在把结果写回客户端后调用。
+// 重启会立刻关闭 HTTP 服务, 由调用方控制时机: 先响应后重启, 前端才不会把
+// 连接中断误判为更新失败。
+func RestartSelf() {
+	execPath, err := os.Executable()
+	if err != nil {
+		log.Errorf("get executable path failed: %v", err)
+		return
+	}
+	restartExecutable(execPath)
 }
 
 func copyFile(src, dst string) error {

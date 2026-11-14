@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/91xusir/octopus/internal/conf"
 	"github.com/91xusir/octopus/internal/server/middleware"
@@ -47,5 +48,11 @@ func updateFunc(c *gin.Context) {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+	// 先把成功响应写回客户端再重启: 重启会立刻关闭 HTTP 服务, 先重启会让前端
+	// 收到连接中断而把更新误判为失败。留出一秒让响应送达, 前端随后自行刷新页面。
 	resp.Success(c, "update success")
+	go func() {
+		time.Sleep(time.Second)
+		update.RestartSelf()
+	}()
 }

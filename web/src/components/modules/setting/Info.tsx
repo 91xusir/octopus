@@ -49,10 +49,10 @@ export function SettingInfo() {
         updateCore.mutate(undefined, {
             onSuccess: () => {
                 toast.success(t('info.updateSuccess'));
-                // 更新成功后清理缓存并刷新
+                // 服务端在响应后约一秒重启, 等它完成重启再刷新, 避免页面打在重启窗口上。
                 setTimeout(() => {
                     void clearCacheAndReload();
-                }, 1500);
+                }, 3000);
             },
             onError: () => {
                 toast.error(t('info.updateFailed'));
