@@ -74,23 +74,16 @@ func ChannelCreate(detail *model.ChannelDetail, ctx context.Context) (*model.Cha
 		if err := tx.Create(&channel).Error; err != nil {
 			return fmt.Errorf("failed to create channel: %w", err)
 		}
-		if err := syncChannelChildren(tx, channel.ID, detail); err != nil {
-			return err
-		}
-		// 新渠道的全部授权自动挂入默认分组 auto。
-		return autoGroupAttach(tx, channel.ID, nil)
+		return syncChannelChildren(tx, channel.ID, detail)
 	}); err != nil {
 		return nil, err
 	}
 
 	channelCache.Set(channel.ID, channel)
 	// 凭据, 模型与授权的主键都在事务内分配, 此刻只在库里; 重载子表缓存以让授权候选与转发都能查到。
+	// 直连模型 ID 由读取侧按缓存现算, 渠道创建不改动任何分组, 分组缓存无需刷新。
 	if err := reloadChannelChildren(ctx, channel.ID); err != nil {
 		return nil, err
-	}
-	// auto 分组可能在本事务内被创建或挂入了成员, 刷新分组缓存。
-	if err := groupRefreshCache(ctx); err != nil {
-		return nil, fmt.Errorf("failed to refresh groups: %w", err)
 	}
 	created := channelDetail(channel)
 	return &created, nil
@@ -107,29 +100,18 @@ func ChannelUpdate(detail *model.ChannelDetail, ctx context.Context) (*model.Cha
 		return nil, err
 	}
 
-	// 更新前快照渠道已有的授权: 事务后只把新增授权挂入默认分组 auto,
-	// 用户从 auto 手动移除的成员不会被再次自动加回。
-	before := make(map[int]bool)
-	for _, id := range channelGrantIDs(detail.ID) {
-		before[id] = true
-	}
-
 	if err := db.GetDB().WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// 逐列点名而不整行覆盖: 全量提交下 enabled 置假与被清空的可选字段都必须落库, 按零值跳过会写不进去;
 		// 而统计列由转发累加, 不在提交范围内, 整行覆盖会把它抹回提交时的旧值。
 		if err := tx.Model(&model.Channel{}).Where("id = ?", detail.ID).
-			Select("name", "dialect", "enabled", "base_url",
+			Select("name", "model_prefix", "dialect", "enabled", "base_url",
 				"openai_chat_completion_path", "openai_response_path", "anthropic_message_path",
 				"proxy", "channel_proxy", "custom_header", "response_headers", "console_url",
 				"param_override", "match_regex").
 			Updates(&model.Channel{ChannelConfig: detail.ChannelConfig}).Error; err != nil {
 			return fmt.Errorf("failed to update channel: %w", err)
 		}
-		if err := syncChannelChildren(tx, detail.ID, detail); err != nil {
-			return err
-		}
-		// 探测与手动补模型产生的新授权自动挂入默认分组 auto。
-		return autoGroupAttach(tx, detail.ID, before)
+		return syncChannelChildren(tx, detail.ID, detail)
 	}); err != nil {
 		return nil, err
 	}
@@ -143,7 +125,8 @@ func ChannelUpdate(detail *model.ChannelDetail, ctx context.Context) (*model.Cha
 	channelCache.Set(detail.ID, channel)
 	channelStatsNeedUpdateLock.Unlock()
 
-	// 凭据, 模型与授权的增删都会改变可选路由集合, 重载该渠道的三类缓存并刷新分组。
+	// 凭据, 模型与授权的增删都会改变可选路由集合, 重载该渠道的三类缓存;
+	// 被删授权引用的分组成员随外键级联删除, 分组缓存一并刷新。
 	if err := reloadChannelChildren(ctx, detail.ID); err != nil {
 		return nil, err
 	}
@@ -161,6 +144,11 @@ func normalizeChannelConfig(config model.ChannelConfig) (model.ChannelConfig, er
 	config.Name = strings.TrimSpace(config.Name)
 	if config.Name == "" {
 		return config, fmt.Errorf("channel name is required")
+	}
+	// 前缀与模型名以冒号分隔, 前缀自身含冒号会让直连 ID 的切分产生歧义, 直接拒绝。
+	config.ModelPrefix = strings.TrimSpace(config.ModelPrefix)
+	if strings.Contains(config.ModelPrefix, ":") {
+		return config, fmt.Errorf("channel model prefix cannot contain ':'")
 	}
 	config.BaseURL = strings.TrimSpace(config.BaseURL)
 	if config.BaseURL == "" {

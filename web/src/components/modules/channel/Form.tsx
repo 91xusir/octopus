@@ -113,7 +113,8 @@ function ChannelFormFields({ channel, onBack }: { channel?: ChannelDetail; onBac
     };
 
     // 表单高度固定, 否则切换步骤时弹窗会随内容高度跳动; 内容更高的步骤由步骤区内部滚动消化。
-    // 29rem 是连接页恰好铺满所需: 首行留白 8px + 五个字段组 290px + 五道间距 80px + 开关行 20px + 底部按钮 52px。
+    // 29rem 是连接页恰好铺满所需: 首行留白 8px + 五个字段组 290px + 五道间距 80px + 开关行 20px + 底部按钮 52px;
+    // 名称与模型前缀并为一行, 加上直连提示行后略有溢出, 由步骤区滚动消化。
     // 各步骤首行统一落在同一水平线: connection 与 advanced 的首行是无边框文案, 补 8px 才能与步骤导航的按钮文案对齐;
     // keys 与 grants 的首行是 36px 控件行, 文案居中后天然齐平, 无需补白。步骤区自带 4px 内边距供焦点环显示。
     // calc 一项夹住矮屏, 弹窗不提供滚动, 内容超出视口时底部按钮会点不到。详情视图取同一高度以对齐尺寸。
@@ -168,14 +169,30 @@ function ChannelFormFields({ channel, onBack }: { channel?: ChannelDetail; onBac
                     {step === 'connection' && (
                         <div className="space-y-4 pt-2">
                             <div className="space-y-2">
-                                <Label htmlFor={`${idPrefix}-name`}>{t('name')}</Label>
-                                <Input
-                                    id={`${idPrefix}-name`}
-                                    value={state.name}
-                                    onChange={(e) => setState({ ...state, name: e.target.value })}
-                                    className="rounded-xl"
-                                    required
-                                />
+                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                    <div className="space-y-2">
+                                        <Label htmlFor={`${idPrefix}-name`}>{t('name')}</Label>
+                                        <Input
+                                            id={`${idPrefix}-name`}
+                                            value={state.name}
+                                            onChange={(e) => setState({ ...state, name: e.target.value })}
+                                            className="rounded-xl"
+                                            required
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor={`${idPrefix}-model-prefix`}>{t('modelPrefix')}</Label>
+                                        <Input
+                                            id={`${idPrefix}-model-prefix`}
+                                            value={state.model_prefix}
+                                            onChange={(e) => setState({ ...state, model_prefix: e.target.value })}
+                                            // 留空时回退渠道名, 占位符直接展示当前生效的前缀。
+                                            placeholder={state.name.trim() || undefined}
+                                            className="rounded-xl"
+                                        />
+                                    </div>
+                                </div>
+                                <p className="text-xs text-muted-foreground">{t('modelPrefixHint')}</p>
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor={`${idPrefix}-base-url`}>{t('baseUrl')}</Label>

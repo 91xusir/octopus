@@ -21,7 +21,7 @@ import {
     useDeleteAPIKey,
     type APIKey,
 } from '@/api/apikey';
-import { useGroupList } from '@/api/group';
+import { useDirectModels, useGroupList } from '@/api/group';
 import { useStatsAPIKey } from '@/api/stats';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -69,6 +69,7 @@ interface APIKeyFormProps {
 function APIKeyForm({ apiKey, isPending, submitLabel, onSubmit, onClose }: APIKeyFormProps) {
     const t = useTranslations('setting');
     const { data: groups = [] } = useGroupList();
+    const { data: directModels = [] } = useDirectModels();
 
     const [form, setForm] = useState<APIKeyFormData>(() => ({
         name: apiKey?.name ?? '',
@@ -92,7 +93,8 @@ function APIKeyForm({ apiKey, isPending, submitLabel, onSubmit, onClose }: APIKe
     });
     const [expireOpen, setExpireOpen] = useState(false);
 
-    const availableModels = Array.from(new Set(groups.map((g) => g.name).filter(Boolean)));
+    // 可限制的模型范围 = 分组名 + 直连模型 ID, 同名去重后一份, 按字母序展示便于查找。
+    const availableModels = Array.from(new Set([...groups.map((g) => g.name), ...directModels].filter(Boolean))).sort();
     const supportedModels = new Set(form.supported_models);
 
     const expireDate = parseExpireDate(form.expire_at);

@@ -465,6 +465,8 @@
             "stepGrants": "模型",
             "stepAdvanced": "進階",
             "name": "通道名稱",
+            "modelPrefix": "模型前綴",
+            "modelPrefixHint": "用戶端以「前綴:模型名」直接調用本通道模型，無需建立分組；留空默認使用通道名，多個通道共用同一前綴時，同名模型自動互為備援。",
             "baseUrl": "Base URL",
             "apiKey": "API Key",
             "enabled": "啟用",

@@ -2,8 +2,8 @@ package op
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"hash/fnv"
 	"slices"
 	"sort"
 	"strings"
@@ -42,24 +42,30 @@ func GroupGet(id int) (model.Group, error) {
 	return groupSnapshot(group), nil
 }
 
-// GroupListModel 返回缓存中的全部分组模型名, 按名称定序。
+// GroupListModel 返回缓存中的全部分组模型名与全部直连模型 ID, 按名称定序并去重。
 // 两个消费方都不提供排序开关: /v1/models 由第三方客户端直接展示, API Key 面板按返回顺序列出可用模型,
-// 而缓存遍历顺序随机, 故顺序须由此处定稿。
+// 而缓存遍历顺序随机, 故顺序须由此处定稿。直连 ID 与显式分组同名时分组优先, 去重后只保留一份。
 func GroupListModel() []string {
 	models := make([]string, 0, groupCache.Len())
 	for _, group := range groupCache.GetAll() {
 		models = append(models, group.Name)
 	}
+	models = append(models, DirectModelNames()...)
 	sort.Strings(models)
-	return models
+	return slices.Compact(models)
 }
 
 // GroupGetByName 返回客户端模型名称对应的分组配置, 供转发选路使用。
 // 渠道或凭据被禁用及授权两侧缺失的成员不参与选路, 重新可用后会在下一轮读取时自动恢复。
+// 显式分组优先: 名称命中分组索引即按分组转发, 未命中再按直连 ID 解析渠道模型。
 func GroupGetByName(name string) (model.Group, error) {
 	groupID, ok := groupNameIndex.Get(name)
 	if !ok {
-		return model.Group{}, fmt.Errorf("group not found")
+		group, ok := directModelGroup(name)
+		if !ok {
+			return model.Group{}, fmt.Errorf("group not found")
+		}
+		return group, nil
 	}
 	group, ok := groupCache.Get(groupID)
 	if !ok {
@@ -295,65 +301,142 @@ func groupSnapshot(group model.Group) model.Group {
 	return group
 }
 
-// AutoGroupName 是默认分组的固定名称, 客户端可直接以它作为模型名聚合全部渠道。
-const AutoGroupName = "auto"
+// 直连模型 ID 让每个渠道模型无需建分组即可直接调用: 客户端以 前缀:模型名 作为模型名请求,
+// 前缀取渠道设置的模型前缀, 留空回退渠道名。多个渠道共用同一前缀时, 同名模型的直连 ID
+// 聚合全部渠道互为故障转移; 需要更细的优先级控制或手动指定成员时, 再显式创建分组。
+const directModelSeparator = ":"
 
-// autoGroupAttach 确保默认分组 auto 存在, 并把渠道尚未挂入该分组的授权追加为分组项:
-// 渠道创建时全量挂入, 更新时只补新增授权, 用户从 auto 手动移除的成员不会被自动加回。
-// before 为事务前的渠道授权主键集合, 创建渠道时传 nil 表示全部视为新增。
-// 授权被删除时分组项随外键级联删除, auto 分组无需自行清理;
-// 已挂成员与新成员由 (group_id, channel_grant_id) 唯一约束兜底, 重复执行无副作用。
-func autoGroupAttach(tx *gorm.DB, channelID int, before map[int]bool) error {
-	var grantIDs []int
-	if err := tx.Model(&model.ChannelGrant{}).
-		Joins("JOIN channel_models ON channel_models.id = channel_grants.channel_model_id").
-		Where("channel_models.channel_id = ?", channelID).
-		Pluck("channel_grants.id", &grantIDs).Error; err != nil {
-		return fmt.Errorf("failed to list channel grants: %w", err)
-	}
+// directGroupIDBase 让直连分组的进程内路由状态与显式分组共用一个键空间又不与之冲突:
+// 显式分组主键是自增小整数, 直连分组取基准值加直连 ID 的哈希。
+const directGroupIDBase = 1 << 40
 
-	var group model.Group
-	if err := tx.Where("name = ?", AutoGroupName).First(&group).Error; err != nil {
-		if !errors.Is(err, gorm.ErrRecordNotFound) {
-			return fmt.Errorf("failed to query auto group: %w", err)
-		}
-		// 默认分组按故障转移建组: 多渠道聚合时由路由自动选择可用成员。
-		group = model.Group{Name: AutoGroupName, Mode: model.GroupModeFailover, RelayConfig: model.DefaultGroupRelayConfig()}
-		if err := tx.Create(&group).Error; err != nil {
-			// 同名分组可能刚被并发创建, 命中唯一约束时改读已有行。
-			if readErr := tx.Where("name = ?", AutoGroupName).First(&group).Error; readErr != nil {
-				return fmt.Errorf("failed to create auto group: %w", err)
-			}
-		}
-	}
-
-	// First 不加载关联, 分组项显式查询: 顺带取当前最大优先级, 新成员按顺序追加在其后。
-	var existing []model.GroupItem
-	if err := tx.Where("group_id = ?", group.ID).Find(&existing).Error; err != nil {
-		return fmt.Errorf("failed to list auto group items: %w", err)
-	}
-	have := make(map[int]bool, len(existing))
-	maxPriority := 0
-	for _, item := range existing {
-		have[item.ChannelGrantID] = true
-		if item.Priority > maxPriority {
-			maxPriority = item.Priority
-		}
-	}
-
-	items := make([]model.GroupItem, 0, len(grantIDs))
-	for _, grantID := range grantIDs {
-		if before[grantID] || have[grantID] {
+// directModelGroup 把直连模型 ID 解析为转发用的临时分组, 未命中任何渠道模型时返回假。
+// 从左到右尝试每个冒号切分点: 前缀是渠道上设置的值, 名称含多个冒号时取最左侧能命中渠道的切分;
+// 模型名自身含冒号的渠道, 把前缀设置成不含冒号即可避开歧义。
+func directModelGroup(name string) (model.Group, bool) {
+	for idx := 0; idx < len(name); idx++ {
+		if name[idx] != ':' {
 			continue
 		}
-		maxPriority++
-		items = append(items, model.GroupItem{GroupID: group.ID, ChannelGrantID: grantID, Priority: maxPriority})
+		group, ok := directModelGroupByPrefix(name[:idx], name[idx+1:])
+		if ok {
+			return group, true
+		}
 	}
-	if len(items) == 0 {
-		return nil
+	return model.Group{}, false
+}
+
+// directModelGroupByPrefix 按生效前缀与模型名聚合各渠道的可用授权, 构造故障转移分组。
+// 成员按渠道主键与凭据主键定序, 同一 ID 每次解析得到同一成员顺序, 故障转移次序稳定。
+// 分组与成员都是读取时的临时构造, 不落库: 路由状态由直连 ID 哈希出的稳定主键保存,
+// 冷却与亲和因此跨请求延续; 成员主键直接取授权主键, 凭据增删后顺序自然重排。
+func directModelGroupByPrefix(prefix, modelName string) (model.Group, bool) {
+	if prefix == "" || modelName == "" {
+		return model.Group{}, false
 	}
-	if err := tx.Create(&items).Error; err != nil {
-		return fmt.Errorf("failed to attach auto group items: %w", err)
+
+	type directCandidate struct {
+		channel model.Channel
+		grant   model.ChannelGrant
+		keyName string // 缓存中的授权不带关联, 凭据名称在此随候选一并取出。
 	}
-	return nil
+	candidates := make([]directCandidate, 0, 2)
+	for _, grant := range channelGrantCache.GetAll() {
+		channelModel, modelOK := channelModelCache.Get(grant.ChannelModelID)
+		if !modelOK || channelModel.Name != modelName {
+			continue
+		}
+		channel, channelOK := channelCache.Get(channelModel.ChannelID)
+		if !channelOK || !channel.Enabled || effectiveModelPrefix(channel) != prefix {
+			continue
+		}
+		channelKey, keyOK := channelKeyCache.Get(grant.ChannelKeyID)
+		if !keyOK || !channelKey.Enabled {
+			continue
+		}
+		candidates = append(candidates, directCandidate{channel: channel, grant: grant, keyName: channelKey.Name})
+	}
+	if len(candidates) == 0 {
+		return model.Group{}, false
+	}
+	sort.Slice(candidates, func(i, j int) bool {
+		if candidates[i].channel.ID != candidates[j].channel.ID {
+			return candidates[i].channel.ID < candidates[j].channel.ID
+		}
+		return candidates[i].grant.ChannelKeyID < candidates[j].grant.ChannelKeyID
+	})
+
+	id := prefix + directModelSeparator + modelName
+	groupID := directGroupID(id)
+	items := make([]model.GroupItem, 0, len(candidates))
+	for _, candidate := range candidates {
+		items = append(items, model.GroupItem{
+			ID:             candidate.grant.ID,
+			GroupID:        groupID,
+			ChannelGrantID: candidate.grant.ID,
+			Priority:       len(items) + 1,
+			ChannelID:      candidate.channel.ID,
+			ChannelName:    candidate.channel.Name,
+			ModelName:      modelName,
+			KeyName:        candidate.keyName,
+			Protocols:      candidate.grant.Protocols,
+			Available:      true,
+		})
+	}
+	return model.Group{
+		ID:          groupID,
+		Name:        id,
+		Mode:        model.GroupModeFailover,
+		RelayConfig: model.DefaultGroupRelayConfig(),
+		Items:       items,
+	}, true
+}
+
+// effectiveModelPrefix 返回渠道的直连前缀: 设置了模型前缀用前缀, 否则回退渠道名。
+func effectiveModelPrefix(channel model.Channel) string {
+	if channel.ModelPrefix != "" {
+		return channel.ModelPrefix
+	}
+	return channel.Name
+}
+
+// directGroupID 生成直连分组的稳定主键: 基准值加直连 ID 的 FNV 哈希。
+// 哈希空间远大于模型总数, 与显式分组主键冲突的概率可忽略。
+func directGroupID(id string) int {
+	hash := fnv.New32a()
+	hash.Write([]byte(id))
+	return directGroupIDBase + int(hash.Sum32())
+}
+
+// DirectModelNames 返回全部启用渠道当前提供的直连模型 ID, 按名称定序并去重。
+// ID 由生效前缀与渠道模型名拼出: 同前缀渠道的同名模型共用一个 ID; 不检查凭据与授权,
+// 与显式分组按名称列出的口径一致, 凭据停用只影响能否转发而不影响模型是否可见。
+func DirectModelNames() []string {
+	modelsByChannel := make(map[int]map[string]bool)
+	for _, channelModel := range channelModelCache.GetAll() {
+		names := modelsByChannel[channelModel.ChannelID]
+		if names == nil {
+			names = make(map[string]bool)
+			modelsByChannel[channelModel.ChannelID] = names
+		}
+		names[channelModel.Name] = true
+	}
+	names := make([]string, 0, 8)
+	seen := make(map[string]bool)
+	for _, channel := range channelCache.GetAll() {
+		if !channel.Enabled {
+			continue
+		}
+		prefix := effectiveModelPrefix(channel)
+		for modelName := range modelsByChannel[channel.ID] {
+			id := prefix + directModelSeparator + modelName
+			if seen[id] {
+				continue
+			}
+			seen[id] = true
+			names = append(names, id)
+		}
+	}
+	sort.Strings(names)
+	return names
 }

@@ -290,8 +290,9 @@ function LogDetail({ log, now, errorRounds }: { log: RelayLogOverview; now: numb
                                     <JsonContent content={requestBody.data} fallbackText={t('noRequestContent')} />
                                 )
                             ) : !activeGroup ? (
-                                <div className="flex h-full items-center justify-center px-4 text-xs text-muted-foreground">
-                                    {t('groupUnavailable')}
+                                <div className="flex h-full flex-col items-center justify-center gap-1.5 px-4 text-xs text-muted-foreground">
+                                    <span className="max-w-full truncate font-mono text-sm text-foreground">{log.model}</span>
+                                    <span>{t('groupUnavailable')}</span>
                                 </div>
                             ) : !activeGroup.items.length ? (
                                 <div className="flex h-full items-center justify-center px-4 text-xs text-muted-foreground">

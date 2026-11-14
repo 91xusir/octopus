@@ -27,6 +27,7 @@ const (
 // 故必填校验分别由 normalizeChannelConfig 与 fetchUpstreamModels 按各自的需要给出。
 type ChannelConfig struct {
 	Name                     string         `json:"name" gorm:"unique;not null"`                                                                        // 渠道名称。
+	ModelPrefix              string         `json:"model_prefix"`                                                                                       // 直连模型 ID 的前缀: 客户端以 前缀:模型名 直接调用本渠道模型; 留空回退渠道名, 不允许包含冒号。
 	Dialect                  Dialect        `json:"dialect" gorm:"not null;default:generic"`                                                            // 上游方言, 决定出站转换器的厂商特化配置。
 	Enabled                  bool           `json:"enabled" gorm:"default:true"`                                                                        // 渠道是否可用。
 	BaseURL                  string         `json:"base_url"`                                                                                           // 上游地址, 各协议共用。

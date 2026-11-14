@@ -25,6 +25,10 @@ func init() {
 				Handle(getGroupList),
 		).
 		AddRoute(
+			router.NewRoute("/direct-models", http.MethodGet).
+				Handle(getDirectModels),
+		).
+		AddRoute(
 			router.NewRoute("/get/:id", http.MethodGet).
 				Handle(getGroup),
 		).
@@ -151,6 +155,11 @@ func getGroupList(c *gin.Context) {
 		responses[i] = groupResponse{Group: group, Runtime: relay.RouteStateOf(group)}
 	}
 	resp.Success(c, responses)
+}
+
+// getDirectModels 返回全部直连模型 ID, 供 API Key 面板的模型选择器把直连 ID 一并列入可限制范围。
+func getDirectModels(c *gin.Context) {
+	resp.Success(c, op.DirectModelNames())
 }
 
 // getGroup 返回单个分组及其当前实时路由状态。

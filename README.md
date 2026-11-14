@@ -10,6 +10,9 @@
 
 ## Changes from upstream
 
+- **Direct model IDs**: every channel model is callable as `prefix:model` without creating a group; the prefix is set per channel (defaults to the channel name). Channels sharing a prefix and a model name aggregate into one ID with failover.
+- **Custom headers**: per-channel request header overrides (same name replaces, new name appends) and response headers written back to the client.
+- **Console URL**: per-channel link to the upstream console for recharging and key management.
 - **CNY display**: configurable USD→CNY rate; amounts can be shown in CNY, and model prices can be entered in CNY (stored as USD under the hood).
 - **Ollama preset**: quick setup for a local Ollama server (no API key required).
 - **Repo migration**: Go module and author info moved to `91xusir`; in-app update check points to this repo's [Releases](https://github.com/91xusir/octopus/releases).

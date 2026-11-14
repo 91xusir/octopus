@@ -4,6 +4,7 @@ import type { ChannelDetail } from '@/api/channel';
 // 全按名称组织而不存主键: 后端凭据与模型都按名称匹配增删改, 而新建渠道和新加模型时主键尚不存在。
 export type ChannelFormState = {
     name: string;
+    model_prefix: string;
     dialect: ChannelDetail['dialect'];
     base_url: string;
     enabled: boolean;
@@ -29,6 +30,7 @@ export function grantKey(modelName: string, keyName: string) {
 
 export const emptyFormState: ChannelFormState = {
     name: '',
+    model_prefix: '',
     dialect: 'generic',
     base_url: '',
     enabled: true,
@@ -51,6 +53,7 @@ export const emptyFormState: ChannelFormState = {
 export function fromChannel(channel: ChannelDetail): ChannelFormState {
     return {
         name: channel.name,
+        model_prefix: channel.model_prefix ?? '',
         dialect: channel.dialect,
         base_url: channel.base_url,
         enabled: channel.enabled,
@@ -76,6 +79,7 @@ export function fromChannel(channel: ChannelDetail): ChannelFormState {
 export function toChannelConfig(state: ChannelFormState) {
     return {
         name: state.name.trim(),
+        model_prefix: state.model_prefix.trim(),
         dialect: state.dialect,
         enabled: state.enabled,
         base_url: state.base_url.trim(),

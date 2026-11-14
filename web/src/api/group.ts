@@ -2,7 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { apiRequest } from './client';
 import { queryClient } from './client';
-import { groupListQueryOptions } from './queries';
+import { directModelsQueryOptions, groupListQueryOptions } from './queries';
 
 // GroupMode 表示分组的手动或故障转移路由模式。
 export type GroupMode = 'manual' | 'failover';
@@ -104,6 +104,11 @@ export function useGroupList(enabled = true, eventsEnabled = false) {
     useGroupEventStream(enabled && eventsEnabled);
 
     return query;
+}
+
+// useDirectModels 获取全部直连模型 ID；渠道与模型变动后由渠道 Hook 失效重取。
+export function useDirectModels(enabled = true) {
+    return useQuery({ ...directModelsQueryOptions, enabled });
 }
 
 // useGroup 获取单个分组，供只关心一个分组的页面使用；实时状态按需订阅。

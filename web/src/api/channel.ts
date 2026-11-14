@@ -1,6 +1,6 @@
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './client';
-import { channelStatsQueryOptions, groupListQueryOptions, modelListQueryOptions } from './queries';
+import { channelStatsQueryOptions, directModelsQueryOptions, groupListQueryOptions, modelListQueryOptions } from './queries';
 import { formatStatsMetrics, type StatsMetrics, type StatsMetricsFormatted } from './stats';
 
 // Protocol 是渠道支持的上游线协议位掩码，位值与后端 model.Protocol 一致，不可变更。
@@ -59,6 +59,7 @@ export type ChannelGrantCandidate = {
 export type ChannelDetail = {
     id: number;
     name: string;
+    model_prefix: string; // 直连模型 ID 前缀：客户端以 前缀:模型名 直接调用本渠道模型；留空回退渠道名。
     dialect: Dialect;
     enabled: boolean;
     base_url: string; // 上游地址，各协议共用。
@@ -209,6 +210,8 @@ export function useCreateChannel() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['channels'] });
             queryClient.invalidateQueries({ queryKey: modelListQueryOptions.queryKey });
+            // 渠道的模型与前缀决定直连模型 ID, 增删后直连列表要跟着刷新。
+            queryClient.invalidateQueries({ queryKey: directModelsQueryOptions.queryKey });
         },
     });
 }
@@ -233,6 +236,7 @@ export function useUpdateChannel() {
             queryClient.invalidateQueries({ queryKey: ['channels'] });
             queryClient.invalidateQueries({ queryKey: modelListQueryOptions.queryKey });
             queryClient.invalidateQueries({ queryKey: groupListQueryOptions.queryKey });
+            queryClient.invalidateQueries({ queryKey: directModelsQueryOptions.queryKey });
         },
     });
 }
@@ -255,6 +259,7 @@ export function useDeleteChannel() {
             queryClient.invalidateQueries({ queryKey: ['channels'] });
             queryClient.invalidateQueries({ queryKey: modelListQueryOptions.queryKey });
             queryClient.invalidateQueries({ queryKey: groupListQueryOptions.queryKey });
+            queryClient.invalidateQueries({ queryKey: directModelsQueryOptions.queryKey });
         },
     });
 }
@@ -278,6 +283,8 @@ export function useEnableChannel() {
             queryClient.invalidateQueries({ queryKey: ['channels'] });
             // 渠道启停会改变其授权在分组内的可用性，成员列表要跟着刷新。
             queryClient.invalidateQueries({ queryKey: groupListQueryOptions.queryKey });
+            // 启停同样决定直连模型 ID 是否可见。
+            queryClient.invalidateQueries({ queryKey: directModelsQueryOptions.queryKey });
         },
     });
 }

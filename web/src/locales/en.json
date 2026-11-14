@@ -465,6 +465,8 @@
             "stepGrants": "Models",
             "stepAdvanced": "Advanced",
             "name": "Channel name",
+            "modelPrefix": "Model prefix",
+            "modelPrefixHint": "Clients call this channel's models directly as prefix:model, no group needed. Defaults to the channel name when empty; channels sharing a prefix fail over between same-named models.",
             "baseUrl": "Base URL",
             "apiKey": "API Key",
             "enabled": "Enabled",

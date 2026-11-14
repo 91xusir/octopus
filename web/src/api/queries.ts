@@ -31,6 +31,12 @@ export const groupListQueryOptions = queryOptions({
     queryFn: () => apiRequest<Group[]>('/api/v1/group/list'),
 });
 
+// directModelsQueryOptions 供页面查询和渠道变更失效共享直连模型 ID 列表定义。
+export const directModelsQueryOptions = queryOptions({
+    queryKey: ['groups', 'direct-models'],
+    queryFn: () => apiRequest<string[]>('/api/v1/group/direct-models'),
+});
+
 // modelListQueryOptions 供页面查询和启动预取共享模型列表定义。
 export const modelListQueryOptions = queryOptions({
     queryKey: ['models', 'list'],
